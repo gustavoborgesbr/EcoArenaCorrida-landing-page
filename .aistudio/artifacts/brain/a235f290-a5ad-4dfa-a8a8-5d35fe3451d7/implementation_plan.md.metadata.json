@@ -1,6 +1,6 @@
 {
-  "summary": "Plano de implementação detalhado para a separação dos elementos da barra de navegação (Navbar) entre visitantes/atletas e administradores autenticados via Firebase Auth, além de integração de botão discreto no rodapé e barra de navegação.",
-  "updatedAt": "2026-10-15T14:34:17.325221697Z",
+  "summary": "Plano de implementação para o Modal de Pagamento Pix com QR Code com valor exato, botões diretos de Copia e Cola / Link bancário, destaque do valor de R$ 5,00 e ação principal de envio de comprovante no WhatsApp da Eco Arena.",
+  "updatedAt": "2026-10-15T15:02:18.341526668Z",
   "requestFeedback": true,
   "userFacing": true
 }

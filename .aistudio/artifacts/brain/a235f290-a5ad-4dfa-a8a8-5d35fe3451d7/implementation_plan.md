@@ -1,58 +1,110 @@
-# Plano de Implementação: Separação de Elementos da Barra de Navegação (Navbar) por Perfil Firebase
+# Modal de Pagamento Pix com QR Code Dinâmico e Link Direto
 
-Este plano detalha a reestruturação da barra de navegação (`Header.tsx`/`Navbar`) e do rodapé (`Footer.tsx`) para segmentar os elementos visíveis de acordo com as regras de autenticação do **Firebase Auth**, distinguindo a visão do **atleta/visitante** da visão do **administrador autenticado**.
+Modal aprimorado acionado automaticamente ao finalizar o formulário de inscrição, exibindo o QR Code oficial do Pix com valor exato pré-configurado (R$ 5,00), botões de ação imediata (Copia e Cola e link de app bancário) logo abaixo da imagem, e direcionamento prioritário para envio do comprovante no WhatsApp.
 
----
+## Decisões Confirmadas com o Usuário
 
-## 1. Regras de Exibição por Perfil
-
-### 1.1 Visitantes e Atletas (Não Autenticados)
-- **Marca**: Logo da Ecoarena Mansão Verde com navegação para o topo.
-- **Consultar Inscrição**: Botão com ícone de lupa para localizar inscrição pelo CPF e emitir comprovante/QR Code.
-- **Inscrever-se**: Botão de destaque com badge de valor (R$ 5,00) com rolagem suave até o formulário oficial.
-- **Acesso Admin Discreto**: Botão discreto e elegante com ícone de chave/escudo (ex: "Área Admin" ou ícone discreto) na barra e no rodapé para abrir o modal de login do Firebase Auth.
-- **Ocultos**: Painel de Inscritos, Configurações de Pix/WhatsApp e métricas administrativas.
-
-### 1.2 Administrador Autenticado (Firebase Auth: `user != null`)
-- **Marca**: Logo com selo discreto de modo administrativo ativo.
-- **Painel de Inscritos**: Botão rápido para abrir a gestão de inscritos com badge numérico em tempo real.
-- **Configurações**: Botão de engrenagem para ajustes de chaves Pix, número de WhatsApp e regras do evento.
-- **Badge do Admin**: Identificação visual elegante (ex: `Admin • email@...` ou badge verde esmeralda).
-- **Botão Sair (Logout)**: Ação direta de encerramento de sessão via Firebase Auth (`signOut`), retornando imediatamente a barra para a visão de visitante.
+- **Link direto abaixo do QR Code**: Botão "Pix Copia e Cola" com feedback tátil de cópia e atalho para aplicativo bancário/pagamento.
+- **Destaque do Valor**: Bloco em destaque com o valor exato de **R$ 5,00**, status do Lote Promocional (100 primeiros atletas) e identificador do atleta.
+- **Ação Principal Subsequente**: Botão de alta visibilidade para envio do comprovante pré-formatado diretamente no WhatsApp oficial da Eco Arena.
 
 ---
 
-## 2. Arquitetura e Fluxo de Estado
+### 1. Visão Geral & Experiência do Usuário
 
-1. **Estado Centralizado no `App.tsx`**:
-   - Escuta em tempo real do estado de autenticação via `subscribeToAuthState` do Firebase Auth.
-   - Fornece `currentUser: User | null` e função `handleLogout()` para os componentes filhos.
-   - Estado de modal de login dedicado para administradores caso tentem acessar enquanto não autenticados.
-
-2. **Componente `Header.tsx`**:
-   - Recebe propriedades: `currentUser`, `onLoginClick`, `onLogoutClick`, `onOpenLookup`, `onOpenAdmin`, `onOpenSettings`, `onScrollToForm`, `participantsCount`.
-   - Renderização condicional limpa e responsiva:
-     - No mobile: menu compacto sem sobrecarregar a barra.
-     - No desktop: disposição harmoniosa dos botões com transições suaves.
-
-3. **Componente `Footer.tsx`**:
-   - Ponto de entrada discreto de autenticação na seção "Área do Organizador".
-   - Exibição de status atual: "Conectado como Administrador" com atalho rápido ou "Acesso Administrativo (Login)".
-
-4. **Modal de Login Administrativo**:
-   - Modal com interface amigável para login com e-mail e senha, mensagem de erro amigável e opção de recuperação de senha.
+O atleta preenche o formulário com dados pessoais (Nome, CPF, RG, telefone, modalidade de 3km/5km/10km e tamanho da camiseta). Ao clicar no botão de submissão:
+1. Os dados são salvos localmente e sincronizados no **Firestore**.
+2. O **Modal de Pagamento Pix** surge instantaneamente na tela sobreposta com efeito backdrop blur.
+3. No topo do modal, o atleta vê o valor exato (**R$ 5,00**) e o status promocional.
+4. No centro, o **QR Code Pix dinâmico** é gerado com o padrão EMV oficial do Banco Central, contendo chave, favorecido e valor exato.
+5. Logo abaixo do QR Code, situam-se os botões de ação:
+   - **Copiar Código Pix (Copia e Cola)**: cópia de um clique com confirmação visual.
+   - **Pagar no App do Banco**: link/acionamento compatível com dispositivos móveis.
+   - **Copiar Chave Pix Alternativa**: cópia direta da chave Pix (telefone/WhatsApp).
+6. Na base do modal, o botão de chamada prioritária (**CTA Principal**): *"Enviar Comprovante no WhatsApp da Eco Arena"*, com texto pronto contendo Nome, CPF, ID e modalidade.
 
 ---
 
-## 3. Etapas de Execução
+### 2. Design Visual & Hierarquia de Elementos
 
-1. **Ajustar `App.tsx`**:
-   - Conectar `currentUser` do Firebase Auth e criar manipuladores de login e logout com feedback visual.
-   - Integrar modal de login administrativo (`AdminLoginModal`).
-2. **Atualizar `src/components/Header.tsx`**:
-   - Implementar renderização condicional baseada em `currentUser != null`.
-   - Aplicar badges, tooltips e botões conforme as respostas fornecidas.
-3. **Atualizar `src/components/Footer.tsx`**:
-   - Sincronizar o botão discreto de login com a sessão ativa.
-4. **Validação & Compilação**:
-   - Executar `compile_applet` para assegurar integridade tipográfica e de tipos TypeScript sem quebra de build.
+```
+┌────────────────────────────────────────────────────────┐
+│  PAGAMENTO PIX & CONFIRMAÇÃO DA VAGA          [X]      │
+│  Parabéns, [Nome do Atleta]! Sua vaga está pré-reservada│
+├────────────────────────────────────────────────────────┤
+│  ┌──────────────────────┐  ┌─────────────────────────┐ │
+│  │ Valor da Inscrição   │  │ Cód. Inscrição          │ │
+│  │ R$ 5,00              │  │ #EQ-001 • 5km Corrida   │ │
+│  │ Lote Promocional 100 │  │ Porta da Eco Arena      │ │
+│  └──────────────────────┘  └─────────────────────────┘ │
+│                                                        │
+│             ┌────────────────────────┐                 │
+│             │   [ IMAGEM QR CODE ]   │                 │
+│             │     PIX COM R$ 5,00    │                 │
+│             │       EMV OFICIAL      │                 │
+│             └────────────────────────┘                 │
+│             Aponte a câmera do seu banco               │
+│                                                        │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │ [📋] Copiar Código Pix Copia e Cola              │  │
+│  └──────────────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │ [⚡] Abrir App Bancário / Pagar via Pix          │  │
+│  └──────────────────────────────────────────────────┘  │
+│                                                        │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │ [💬] ENVIAR COMPROVANTE NO WHATSAPP DA ECO ARENA │  │
+│  └──────────────────────────────────────────────────┘  │
+│                                                        │
+│  [Ver Comprovante Digital]                  [Concluir] │
+└────────────────────────────────────────────────────────┘
+```
+
+- **Paleta de Cores**:
+  - Destaques esportivos em verde esmeralda (`emerald-600` / `emerald-500`) e tons escuros elegantes (`slate-950` / `slate-900`).
+  - Avisos pontuais em âmbar para urgência do lote promocional.
+- **Tipografia e Contraste**:
+  - Sem tags estáticas desnecessárias; foco em tipografia limpa, números tabulares monoespaçados para chave e código Pix, e botões de toque com tamanho mínimo de 48px.
+- **Acessibilidade**:
+  - Diálogo acessível com `role="dialog"`, `aria-modal="true"`, foco gerenciado e fechamento via tecla `Escape`.
+
+---
+
+### 3. Arquitetura Técnica & Fluxo de Dados
+
+```
+[Formulário de Inscrição (RegistrationForm.tsx)]
+       │
+       ▼ (onSubmit)
+[handleRegisterSubmit (App.tsx)]
+       │
+       ├──► Sincroniza participante no Firestore (status: pending_payment)
+       │
+       ▼ (setPaymentParticipant)
+[Modal de Pagamento (PaymentModal.tsx)]
+       ├──► Gera payload EMV Pix com valor exato (R$ 5,00) via generatePixPayload()
+       ├──► Renderiza QR Code de alta precisão
+       ├──► Oferece Copia e Cola + Link direto de pagamento
+       └──► Gera link do WhatsApp com mensagem oficial pronta para validação
+```
+
+- **Componentes Envolvidos**:
+  - `src/components/PaymentModal.tsx`: reestruturação do layout interno, exibição aberta do QR Code, novo link direto de pagamento, botões de ação ergonômicos e suporte a feedback de cópia.
+  - `src/components/RegistrationForm.tsx`: garantia de transição instantânea ao clicar no botão final de confirmação.
+  - `src/utils/validation.ts`: validação e geração íntegra do payload Pix (EMV BR Code) incluindo chave, valor formatado em duas casas decimais e identificador da transação (TXID).
+
+---
+
+### 4. Plano de Verificação
+
+1. **Testes do Formulário**:
+   - Preencher o formulário na página inicial e clicar no botão de submissão.
+   - Verificar abertura imediata do modal sem atrasos ou etapas intermediárias desnecessárias.
+2. **Testes do QR Code e Copia e Cola**:
+   - Validar que o QR Code é exibido de imediato com o valor exato de R$ 5,00.
+   - Testar o botão "Copiar Código Pix Copia e Cola" e certificar-se de que o código copiado contém o payload Pix completo.
+   - Testar o botão de abertura do app bancário/link direto.
+3. **Testes de Integração com WhatsApp**:
+   - Clicar no botão principal de envio de comprovante e verificar se o link do WhatsApp abre com o texto pré-configurado contendo os dados do atleta.
+4. **Verificação de Compilação**:
+   - Executar `compile_applet` e `lint_applet` para assegurar integridade de build.

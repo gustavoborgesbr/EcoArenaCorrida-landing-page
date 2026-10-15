@@ -67,9 +67,9 @@ export const Hero: React.FC<HeroProps> = ({
           {/* Left Column: Headlines & Call to Actions */}
           <div className="lg:col-span-7 space-y-6 text-left">
             {/* Celebration Badge */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-100 border border-emerald-300/80 text-emerald-800 text-xs sm:text-sm font-bold tracking-wide shadow-xs">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-100 border border-emerald-300/80 text-emerald-900 text-xs sm:text-sm font-bold tracking-wide shadow-xs">
               <Sparkles className="w-4 h-4 text-emerald-600" />
-              <span>EDIÇÃO HISTÓRICA DE ANIVERSÁRIO</span>
+              <span>4 ANOS DE ECO ARENA • FESTA NA PISTA</span>
             </div>
 
             {/* Title & Subtitle Container */}
@@ -108,10 +108,10 @@ export const Hero: React.FC<HeroProps> = ({
               <div className="bg-white/95 border border-slate-200/90 hover:border-emerald-500/50 rounded-2xl p-3 sm:p-4 text-left transition-all shadow-xs hover:shadow-md">
                 <div className="flex items-center gap-1.5 text-xs text-emerald-700 font-bold mb-1">
                   <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600" />
-                  <span>Largada</span>
+                  <span>Concentração</span>
                 </div>
                 <div className="font-extrabold text-xs sm:text-sm md:text-base text-slate-900">
-                  {config.eventTime}h manhã
+                  7h da noite (19h)
                 </div>
               </div>
 
@@ -120,8 +120,8 @@ export const Hero: React.FC<HeroProps> = ({
                   <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600" />
                   <span>Local</span>
                 </div>
-                <div className="font-extrabold text-xs sm:text-sm md:text-base text-slate-900 truncate" title={config.locationName}>
-                  Massagueira
+                <div className="font-extrabold text-xs sm:text-sm md:text-base text-slate-900 truncate" title="Porta da Eco Arena">
+                  Porta da Eco Arena
                 </div>
               </div>
             </div>
@@ -142,24 +142,36 @@ export const Hero: React.FC<HeroProps> = ({
                 type="button"
                 className="flex items-center justify-center gap-2 px-6 py-4 rounded-2xl text-sm font-bold text-slate-800 bg-white hover:bg-slate-50 border border-slate-300 hover:border-slate-400 transition-colors shadow-xs"
               >
-                <span>Ver Percursos & Detalhes</span>
+                <span>Ver Atrações & Sorteios</span>
               </button>
             </div>
 
-            {/* Trust Points */}
-            <div className="flex flex-wrap items-center gap-4 sm:gap-6 pt-1 text-xs font-semibold text-slate-600">
-              <span className="flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                Confirmação oficial por WhatsApp
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Trophy className="w-4 h-4 text-emerald-600 shrink-0" />
-                Medalha Finisher para todos
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Zap className="w-4 h-4 text-emerald-600 shrink-0" />
-                Hidratação Powerade inclusa
-              </span>
+            {/* Event Highlights & Context Cards (Replaces old generic trust points) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 text-xs font-semibold text-slate-700">
+              <div className="flex items-center gap-2.5 p-2.5 rounded-2xl bg-white/95 border border-slate-200/90 shadow-2xs">
+                <span className="w-7 h-7 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center shrink-0 text-sm">
+                  🔥
+                </span>
+                <span><strong>Monster Energy Drink</strong> logo no início da corrida!</span>
+              </div>
+              <div className="flex items-center gap-2.5 p-2.5 rounded-2xl bg-white/95 border border-slate-200/90 shadow-2xs">
+                <span className="w-7 h-7 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center shrink-0 text-sm">
+                  🎤
+                </span>
+                <span>Cantores <strong>Joy Davidson</strong> puxando o som na pista</span>
+              </div>
+              <div className="flex items-center gap-2.5 p-2.5 rounded-2xl bg-white/95 border border-slate-200/90 shadow-2xs">
+                <span className="w-7 h-7 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0 text-sm">
+                  🎁
+                </span>
+                <span><strong>5 Sorteios Imperdíveis</strong> (Treinos, Whey, Creatina)</span>
+              </div>
+              <div className="flex items-center gap-2.5 p-2.5 rounded-2xl bg-white/95 border border-slate-200/90 shadow-2xs">
+                <span className="w-7 h-7 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 text-sm">
+                  ⚠️
+                </span>
+                <span>Taxa de apenas <strong>R$ 5,00</strong> (100 primeiras vagas!)</span>
+              </div>
             </div>
           </div>
 
@@ -173,19 +185,19 @@ export const Hero: React.FC<HeroProps> = ({
               <div className="relative rounded-3xl overflow-hidden border-2 border-emerald-500/30 bg-white shadow-2xl shadow-emerald-950/15 group">
                 <img
                   src={!imgError ? '/assets/foto2.jpg' : '/assets/runner.jpg'}
-                  alt="Galera da Ecoarena reunida na Mansão Verde"
-                  className="w-full h-[320px] sm:h-[400px] lg:h-[460px] object-cover object-center transform group-hover:scale-105 transition-transform duration-700"
+                  alt="Galera da Eco Arena reunida"
+                  className="w-full h-[340px] sm:h-[410px] lg:h-[470px] object-cover object-center transform group-hover:scale-105 transition-transform duration-700"
                   onError={() => setImgError(true)}
                 />
 
                 {/* Subtle gradient sheen at bottom for badge contrast */}
-                <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-slate-950/90 via-slate-950/40 to-transparent pointer-events-none" />
+                <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-slate-950/95 via-slate-950/50 to-transparent pointer-events-none" />
 
                 {/* Top Floating Badge */}
                 <div className="absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-none">
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-950/85 backdrop-blur-md border border-white/20 text-xs font-bold text-white shadow-lg">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    Mansão Verde • Massagueira
+                    Porta da Eco Arena • 7h da noite
                   </span>
                   <span className="px-2.5 py-1 rounded-full bg-emerald-500 text-slate-950 text-xs font-black uppercase tracking-wider shadow-lg">
                     4 Anos
@@ -193,13 +205,13 @@ export const Hero: React.FC<HeroProps> = ({
                 </div>
 
                 {/* Bottom Celebration Caption */}
-                <div className="absolute bottom-4 left-4 right-4 p-3.5 rounded-2xl bg-slate-950/85 backdrop-blur-md border border-white/10 text-left">
+                <div className="absolute bottom-4 left-4 right-4 p-3.5 rounded-2xl bg-slate-950/90 backdrop-blur-md border border-white/10 text-left">
                   <p className="text-xs sm:text-sm font-bold text-white flex items-center gap-2">
-                    <span className="text-base">🎉</span>
-                    Energia pura com a comunidade Ecoarena!
+                    <span className="text-base">🔥</span>
+                    Monster Energy + 🎤 Joy Davidson ao vivo!
                   </p>
-                  <p className="text-[11px] text-slate-300 mt-0.5">
-                    Largada e chegada na Mansão Verde com hidratação Powerade
+                  <p className="text-[11px] text-slate-300 mt-1 leading-relaxed">
+                    É esporte, é festa, é comemoração! Chama a galera, garanta sua vaga entre os 100 primeiros e venha viver essa noite!
                   </p>
                 </div>
               </div>

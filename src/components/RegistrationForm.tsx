@@ -181,7 +181,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                   FORMULÁRIO DE INSCRIÇÃO & CONFIRMAÇÃO
                 </h2>
                 <p className="text-emerald-100 text-xs sm:text-sm mt-1">
-                  Preencha seus dados para garantir sua vaga e número de peito na Corrida Equarena.
+                  Preencha seus dados para garantir seu número de peito na Corrida Arena • 4 Anos de Eco Arena.
                 </p>
               </div>
 
@@ -195,7 +195,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                 </span>
                 {feeInfo.isEarlyBird && (
                   <span className="block text-[10px] text-amber-200 mt-0.5 font-bold">
-                    Restam {feeInfo.remainingEarlyBirdSpots} vagas a R$ 5!
+                    Restam {feeInfo.remainingEarlyBirdSpots} vagas a R$ 5,00!
                   </span>
                 )}
               </div>
@@ -456,15 +456,13 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                 </div>
                 <div>
                   <div className="font-bold text-sm text-slate-900 flex items-center gap-2">
-                    <span>SIM! Confirmo expressamente minha presença na Corrida Equarena.</span>
+                    <span>SIM! Confirmo expressamente minha presença na Corrida Arena (4 Anos Eco Arena).</span>
                     <span className="text-[10px] uppercase font-extrabold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-200">
                       Obrigatório
                     </span>
                   </div>
                   <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                    Ao confirmar, reservamos seu kit oficial (número de peito, camiseta e hidratação)
-                    e liberamos a taxa promocional de R$ {feeInfo.fee.toFixed(2).replace('.', ',')} para
-                    os 100 primeiros atletas.
+                    Ao confirmar, você garante seu número de peito, Monster Energy Drink na largada, show ao vivo com os cantores Joy Davidson e participação nos 5 sorteios imperdíveis de aniversário, com a taxa promocional de apenas R$ {feeInfo.fee.toFixed(2).replace('.', ',')} para os 100 primeiros atletas.
                   </p>
                 </div>
               </div>

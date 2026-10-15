@@ -147,9 +147,9 @@ export function buildWhatsAppMessage(params: {
   const formattedFee = `R$ ${params.fee.toFixed(2).replace('.', ',')}`;
   const loteInfo = params.isEarlyBird ? 'Lote Promocional (100 Primeiros)' : 'Lote Regular';
 
-  return `🏃 *COMPROVANTE DE INSCRIÇÃO - CORRIDA EQUARENA*
+  return `🏃 *COMPROVANTE DE INSCRIÇÃO - CORRIDA ARENA (4 ANOS ECO ARENA)*
 
-Olá, Equipe Equarena!
+Olá, Equipe Eco Arena!
 Acabei de preencher minha inscrição e confirmar presença pelo site! 
 
 📋 *Dados do Atleta:*
@@ -161,7 +161,7 @@ Acabei de preencher minha inscrição e confirmar presença pelo site!
 • *Cód. Inscrição:* #${params.registrationId}
 
 📎 *Segue em anexo o meu comprovante de pagamento Pix.*
-Por favor, confirmem minha vaga. Nos vemos na largada! 🔥🏅`;
+Por favor, confirmem minha vaga e número de peito. Nos vemos na largada! 🔥🎉`;
 }
 
 /**

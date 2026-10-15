@@ -2,14 +2,14 @@ import { EventConfig, Participant } from '../types/index.ts';
 
 export const DEFAULT_CONFIG: EventConfig = {
   eventName: 'Corrida Arena: 4 Anos de Eco Arena',
-  organizerName: 'Ecoarena Mansão Verde',
+  organizerName: 'Eco Arena',
   eventDate: '2025-05-18',
-  eventTime: '06:30',
-  locationName: 'Ecoarena Mansão Verde (Orla da Massagueira)',
-  locationAddress: 'Rua da Orla da Lagoa Manguaba, Massagueira - Marechal Deodoro / AL',
-  pixKey: '(71) 99234-5678', // Defaults to Ecoarena phone number
+  eventTime: '19:00',
+  locationName: 'Porta da Eco Arena',
+  locationAddress: 'Na porta da Eco Arena',
+  pixKey: '(71) 99234-5678',
   pixKeyType: 'telefone',
-  pixReceiverName: 'ECOARENA ESPORTES',
+  pixReceiverName: 'ECO ARENA ESPORTES',
   pixReceiverCity: 'SALVADOR',
   whatsAppNumber: '(71) 99234-5678',
   earlyBirdLimit: 100,

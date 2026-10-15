@@ -47,13 +47,13 @@ export const RaceMap: React.FC<RaceMapProps> = ({ onSelectDistance }) => {
       difficulty: 'Intermediário / PB',
       turnaround: 'Final da Orla da Massagueira (acesso ao Polo Gastronômico)',
       description:
-        'Percurso 100% plano à beira da lagoa, ideal para buscar seu melhor tempo (PB)! Vento suave matinal e dois pontos de hidratação estratégica com água e Powerade gelado.',
-      hydrationPoints: ['Largada (0 km)', 'Posto 1 (2,0 km)', 'Ponto de Retorno (2,5 km)', 'Chegada (5 km)'],
+        'Percurso 100% plano e animado à beira da lagoa, ideal para buscar seu melhor tempo (PB) ao som dos cantores Joy Davidson e energia extra do Monster Energy Drink!',
+      hydrationPoints: ['Largada na Eco Arena (0 km)', 'Posto 1 (2,0 km)', 'Ponto de Retorno (2,5 km)', 'Chegada (5 km)'],
       landmarks: [
-        'Largada oficial Mansão Verde',
-        'Extensão completa da Orla da Massagueira',
-        'Ponto de retorno com cronometragem eletrônica',
-        'Pórtico de chegada e medalha finisher',
+        'Largada oficial na porta da Eco Arena',
+        'Extensão completa do percurso',
+        'Ponto de retorno com cronometragem',
+        'Pórtico de chegada e grande festa com sorteios',
       ],
     },
     '10km': {
