@@ -1,0 +1,6 @@
+{
+  "summary": "Plano de implementação detalhado para a separação dos elementos da barra de navegação (Navbar) entre visitantes/atletas e administradores autenticados via Firebase Auth, além de integração de botão discreto no rodapé e barra de navegação.",
+  "updatedAt": "2026-10-15T14:34:17.325221697Z",
+  "requestFeedback": true,
+  "userFacing": true
+}

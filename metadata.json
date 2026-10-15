@@ -1,0 +1,6 @@
+{
+  "name": "Corrida Equarena - Inscrições e Confirmação",
+  "description": "Landing page oficial para inscrição e confirmação de presença na Corrida Equarena com taxa promocional de R$ 5 para os primeiros 100 inscritos.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

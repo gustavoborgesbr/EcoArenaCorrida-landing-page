@@ -1,0 +1,103 @@
+{
+  "entities": {
+    "Participant": {
+      "title": "Participant",
+      "description": "Athlete registered for the Ecoarena race",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "fullName": { "type": "string" },
+        "rg": { "type": "string" },
+        "cpf": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "birthDate": { "type": "string" },
+        "gender": { "type": "string" },
+        "distance": { "type": "string" },
+        "shirtSize": { "type": "string" },
+        "confirmedPresence": { "type": "boolean" },
+        "emergencyName": { "type": "string" },
+        "emergencyPhone": { "type": "string" },
+        "isEarlyBird": { "type": "boolean" },
+        "feeAmount": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending_payment", "confirmed", "cancelled"] },
+        "registeredAt": { "type": "string" },
+        "paymentMethod": { "type": "string" },
+        "notes": { "type": "string" },
+        "confirmedAt": { "type": "string" },
+        "confirmedBy": { "type": "string" },
+        "bibNumber": { "type": "number" }
+      },
+      "required": ["id", "fullName", "cpf", "phone", "distance", "shirtSize", "status", "feeAmount"]
+    },
+    "EventConfig": {
+      "title": "EventConfig",
+      "description": "General settings, fees, limits, and WhatsApp configuration",
+      "type": "object",
+      "properties": {
+        "eventName": { "type": "string" },
+        "organizerName": { "type": "string" },
+        "eventDate": { "type": "string" },
+        "eventTime": { "type": "string" },
+        "locationName": { "type": "string" },
+        "locationAddress": { "type": "string" },
+        "pixKey": { "type": "string" },
+        "pixKeyType": { "type": "string" },
+        "pixReceiverName": { "type": "string" },
+        "pixReceiverCity": { "type": "string" },
+        "whatsAppNumber": { "type": "string" },
+        "earlyBirdLimit": { "type": "number" },
+        "earlyBirdFee": { "type": "number" },
+        "standardFee": { "type": "number" },
+        "updatedAt": { "type": "string" },
+        "updatedBy": { "type": "string" }
+      },
+      "required": ["eventName", "pixKey", "whatsAppNumber", "earlyBirdLimit", "earlyBirdFee", "standardFee"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Financial audit trail of admin actions and payment confirmations",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "action": { "type": "string", "enum": ["CONFIRM_PAYMENT", "CANCEL_REGISTRATION", "UPDATE_SETTINGS", "MANUAL_REGISTRATION", "DELETE_REGISTRATION"] },
+        "participantId": { "type": "string" },
+        "participantName": { "type": "string" },
+        "amount": { "type": "number" },
+        "adminEmail": { "type": "string" },
+        "details": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["id", "action", "adminEmail", "details", "timestamp"]
+    },
+    "Admin": {
+      "title": "Admin",
+      "description": "Authorized administrator user profile",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "role": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["email", "role"]
+    }
+  },
+  "firestore": {
+    "/participants/{participantId}": {
+      "schema": "Participant",
+      "description": "Registered athletes and payment verification status"
+    },
+    "/event_config/{configId}": {
+      "schema": "EventConfig",
+      "description": "Event global configuration parameters"
+    },
+    "/audit_logs/{logId}": {
+      "schema": "AuditLog",
+      "description": "Audit trail for financial reconciliation and approvals"
+    },
+    "/admins/{adminId}": {
+      "schema": "Admin",
+      "description": "List of administrator profiles"
+    }
+  }
+}

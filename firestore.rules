@@ -1,0 +1,51 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'gustavo.borges.estudante@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Event Configuration - Public read for race info, admin write
+    match /event_config/{configId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Participants Collection - Public can register (pending_payment) and view for ticket lookup
+    // Admins can update status, confirm payment, or delete
+    match /participants/{participantId} {
+      allow read: if true;
+      allow create: if request.resource.data.status == 'pending_payment' &&
+                       request.resource.data.fullName is string &&
+                       request.resource.data.fullName.size() > 2 &&
+                       request.resource.data.cpf is string &&
+                       request.resource.data.phone is string;
+      allow update, delete: if isAdmin();
+    }
+
+    // Audit logs - Financial and management audit trail, strictly admin
+    match /audit_logs/{logId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Admins profile collection
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+  }
+}
