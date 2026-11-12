@@ -1,17 +1,16 @@
 /**
- * Pure validation and calculation functions for Corrida Equarena
+ * Pure validation and calculation functions for Corre de Sexta - Eco Arena
  */
 
 export interface RegistrationInput {
   fullName: string;
-  rg: string;
+  rg?: string;
   cpf: string;
-  phone: string;
+  email?: string;
+  phone?: string;
   confirmPresence: boolean;
   distance: string;
-  tshirtSize: string;
-  emergencyContactName?: string;
-  emergencyContactPhone?: string;
+  tshirtSize?: string;
 }
 
 export interface FeeCalculation {
@@ -29,10 +28,8 @@ export function validateCPF(cpf: string): boolean {
   const clean = cpf.replace(/\D/g, '');
   if (clean.length !== 11) return false;
 
-  // Reject identical digits like 11111111111
   if (/^(\d)\1{10}$/.test(clean)) return false;
 
-  // First check digit
   let sum = 0;
   for (let i = 0; i < 9; i++) {
     sum += parseInt(clean.charAt(i), 10) * (10 - i);
@@ -41,7 +38,6 @@ export function validateCPF(cpf: string): boolean {
   if (rev === 10 || rev === 11) rev = 0;
   if (rev !== parseInt(clean.charAt(9), 10)) return false;
 
-  // Second check digit
   sum = 0;
   for (let i = 0; i < 10; i++) {
     sum += parseInt(clean.charAt(i), 10) * (11 - i);
@@ -78,7 +74,7 @@ export function formatPhone(value: string): string {
 }
 
 /**
- * Validates phone has at least 10 or 11 digits
+ * Validates phone has at least 10 or 11 digits (when provided)
  */
 export function validatePhone(phone: string): boolean {
   const digits = phone.replace(/\D/g, '');
@@ -94,24 +90,18 @@ export function formatRG(value: string): string {
 
 /**
  * Calculates current registration fee based on early bird count
- * Early bird: first 100 registrations pay R$ 5,00
  */
 export function calculateRegistrationFee(
   currentRegistrationsCount: number,
   earlyBirdLimit: number = 100,
-  earlyBirdFee: number = 5,
-  standardFee: number = 25
+  earlyBirdFee: number = 10,
+  standardFee: number = 10
 ): FeeCalculation {
   const remaining = Math.max(0, earlyBirdLimit - currentRegistrationsCount);
   const isEarlyBird = currentRegistrationsCount < earlyBirdLimit;
   const fee = isEarlyBird ? earlyBirdFee : standardFee;
 
-  let badgeText = '';
-  if (isEarlyBird) {
-    badgeText = `Lote Promocional R$ ${earlyBirdFee.toFixed(2).replace('.', ',')} (${remaining} vagas restantes)`;
-  } else {
-    badgeText = `Lote Normal R$ ${standardFee.toFixed(2).replace('.', ',')}`;
-  }
+  const badgeText = `Taxa de Benefícios R$ ${fee.toFixed(2).replace('.', ',')} (${remaining} vagas restantes)`;
 
   return {
     fee,
@@ -122,7 +112,7 @@ export function calculateRegistrationFee(
 }
 
 /**
- * Cleans phone number to international WhatsApp format (e.g. 5571999998888)
+ * Cleans phone number to international WhatsApp format (e.g. 5582999998888)
  */
 export function cleanWhatsAppNumber(phone: string): string {
   const digits = phone.replace(/\D/g, '');
@@ -133,43 +123,66 @@ export function cleanWhatsAppNumber(phone: string): string {
 }
 
 /**
- * Builds the WhatsApp pre-filled message text to confirm presence and send receipt
+ * Builds the WhatsApp pre-filled message text to confirm presence, registration and R$ 10 benefits fee
  */
 export function buildWhatsAppMessage(params: {
   fullName: string;
   cpf: string;
-  rg: string;
+  email?: string;
+  phone?: string;
+  rg?: string;
   distance: string;
   fee: number;
   registrationId: string;
+  bibNumber?: number;
   isEarlyBird: boolean;
 }): string {
   const formattedFee = `R$ ${params.fee.toFixed(2).replace('.', ',')}`;
-  const loteInfo = params.isEarlyBird ? 'Lote Promocional (100 Primeiros)' : 'Lote Regular';
+  const bibText = params.bibNumber ? `#${params.bibNumber}` : `#${params.registrationId}`;
 
-  return `🏃 *COMPROVANTE DE INSCRIÇÃO - CORRIDA ARENA (4 ANOS ECO ARENA)*
+  const extraLines: string[] = [];
+  if (params.email && params.email.trim()) {
+    extraLines.push(`• *E-mail:* ${params.email.trim()}`);
+  }
+  if (params.phone && params.phone.trim()) {
+    extraLines.push(`• *Telefone:* ${params.phone.trim()}`);
+  }
 
-Olá, Equipe Eco Arena!
-Acabei de preencher minha inscrição e confirmar presença pelo site! 
+  return `🏃 *INSCRIÇÃO ANTECIPADA - CORRE DE SEXTA (ECO ARENA)*
 
-📋 *Dados do Atleta:*
+Olá, Equipe Eco Arena! Acabei de preencher minha inscrição antecipada pelo site para garantir os benefícios do evento:
+
+👤 *Dados do Participante:*
 • *Nome:* ${params.fullName.trim()}
-• *CPF:* ${params.cpf}
-• *RG:* ${params.rg}
-• *Modalidade:* ${params.distance}
-• *Valor:* ${formattedFee} (${loteInfo})
-• *Cód. Inscrição:* #${params.registrationId}
+• *CPF:* ${params.cpf}${extraLines.length > 0 ? '\n' + extraLines.join('\n') : ''}
+• *Nº de Peito / Cód:* ${bibText} (${params.registrationId})
+• *Percurso:* 5 Km • Sexta, 20/11 às 19h (Massagueira)
+• *Taxa de Benefícios & Sorteios:* *${formattedFee}*
 
-📎 *Segue em anexo o meu comprovante de pagamento Pix.*
-Por favor, confirmem minha vaga e número de peito. Nos vemos na largada! 🔥🎉`;
+📎 Estou enviando esta mensagem pelo meu WhatsApp para confirmar minha inscrição e o pagamento via Pix dos ${formattedFee} (Monster Energy, 5 Sorteios e estrutura)!`;
 }
 
 /**
- * Generates WhatsApp URL
+ * Generates WhatsApp URL from either a phone number or a direct WhatsApp URL
  */
-export function generateWhatsAppLink(phone: string, text: string): string {
-  const cleanPhone = cleanWhatsAppNumber(phone);
-  return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`;
+export function generateWhatsAppLink(phoneOrUrl: string, text: string): string {
+  const trimmed = (phoneOrUrl || '').trim();
+  const encodedText = encodeURIComponent(text);
+
+  if (/^https?:\/\//i.test(trimmed) || /^(wa\.me|api\.whatsapp\.com|chat\.whatsapp\.com)\//i.test(trimmed)) {
+    const fullUrl = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    if (fullUrl.includes('chat.whatsapp.com')) {
+      return fullUrl;
+    }
+    const separator = fullUrl.includes('?') ? '&' : '?';
+    if (fullUrl.includes('text=')) {
+      return fullUrl;
+    }
+    return `${fullUrl}${separator}text=${encodedText}`;
+  }
+
+  const cleanPhone = cleanWhatsAppNumber(trimmed);
+  return `https://wa.me/${cleanPhone}?text=${encodedText}`;
 }
 
 /**
@@ -191,45 +204,29 @@ export function generatePixPayload(params: {
   const cleanName = params.merchantName.trim().slice(0, 25).toUpperCase();
   const cleanCity = params.merchantCity.trim().slice(0, 15).toUpperCase();
   const formattedAmount = params.amount.toFixed(2);
-  const txid = (params.txid || 'EQUARENA').slice(0, 25);
+  const txid = (params.txid || 'ECOARENA').slice(0, 25);
 
-  // Payload Format Indicator
   let payload = formatField('00', '01');
-
-  // Point of Initiation Method: 12 (Dynamic) or 11 (Static)
   payload += formatField('01', '12');
 
-  // Merchant Account Information (GUI + Key)
   const gui = formatField('00', 'br.gov.bcb.pix');
   const key = formatField('01', cleanPixKey);
   payload += formatField('26', `${gui}${key}`);
 
-  // Merchant Category Code
   payload += formatField('52', '0000');
-
-  // Transaction Currency (986 = BRL)
   payload += formatField('53', '986');
-
-  // Transaction Amount
-  payload += formatField('54', formattedAmount);
-
-  // Country Code
+  if (params.amount > 0) {
+    payload += formatField('54', formattedAmount);
+  }
   payload += formatField('58', 'BR');
-
-  // Merchant Name
   payload += formatField('59', cleanName);
-
-  // Merchant City
   payload += formatField('60', cleanCity);
 
-  // Additional Data Field Template (txid)
   const txidField = formatField('05', txid);
   payload += formatField('62', txidField);
 
-  // CRC16 section ID and length
   payload += '6304';
 
-  // Compute CRC16 (CCITT-FALSE)
   let crc = 0xffff;
   for (let i = 0; i < payload.length; i++) {
     crc ^= payload.charCodeAt(i) << 8;

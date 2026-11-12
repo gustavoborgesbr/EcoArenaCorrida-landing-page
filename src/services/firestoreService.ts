@@ -8,17 +8,20 @@ import {
   deleteDoc,
   onSnapshot,
   query,
-  orderBy,
   limit,
   writeBatch,
+  increment,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase.ts';
-import { AuditLog, EventConfig, Participant } from '../types/index.ts';
+import { AnalyticsStats, AuditLog, EventConfig, Participant } from '../types/index.ts';
+import { DEFAULT_ANALYTICS } from '../data/initialData.ts';
 
 const PARTICIPANTS_COLLECTION = 'participants';
 const CONFIG_COLLECTION = 'event_config';
 const CONFIG_DOC_ID = 'general';
 const AUDIT_COLLECTION = 'audit_logs';
+const ANALYTICS_COLLECTION = 'analytics_stats';
+const ANALYTICS_DOC_ID = 'funnel_metrics';
 
 /**
  * Real-time listener for all participants ordered by registration date
@@ -35,7 +38,6 @@ export function subscribeToParticipants(
       snapshot.forEach((docSnap) => {
         list.push({ ...(docSnap.data() as Participant), id: docSnap.id });
       });
-      // Sort newest first
       list.sort((a, b) => {
         const tA = new Date(a.registeredAt || 0).getTime();
         const tB = new Date(b.registeredAt || 0).getTime();
@@ -51,10 +53,10 @@ export function subscribeToParticipants(
 }
 
 /**
- * Real-time listener for event configuration
+ * Real-time listener for global event configuration
  */
 export function subscribeToEventConfig(
-  callback: (config: EventConfig) => void,
+  callback: (config: EventConfig | null) => void,
   onError?: (error: Error) => void
 ): () => void {
   const docRef = doc(db, CONFIG_COLLECTION, CONFIG_DOC_ID);
@@ -63,13 +65,60 @@ export function subscribeToEventConfig(
     (docSnap) => {
       if (docSnap.exists()) {
         callback(docSnap.data() as EventConfig);
+      } else {
+        callback(null);
       }
     },
     (err) => {
-      console.warn('Erro ao escutar configurações do evento:', err);
+      console.warn('Erro ao escutar configuração do evento:', err);
       if (onError) onError(err);
     }
   );
+}
+
+/**
+ * Real-time listener for funnel analytics (page views, CTA clicks, registrations, WhatsApp redirects)
+ */
+export function subscribeToAnalyticsStats(
+  callback: (stats: AnalyticsStats) => void,
+  onError?: (error: Error) => void
+): () => void {
+  const docRef = doc(db, ANALYTICS_COLLECTION, ANALYTICS_DOC_ID);
+  return onSnapshot(
+    docRef,
+    (docSnap) => {
+      if (docSnap.exists()) {
+        callback(docSnap.data() as AnalyticsStats);
+      } else {
+        callback(DEFAULT_ANALYTICS);
+      }
+    },
+    (err) => {
+      console.warn('Erro ao escutar métricas de acesso:', err);
+      if (onError) onError(err);
+    }
+  );
+}
+
+/**
+ * Increment a specific analytics counter in Firestore
+ */
+export async function trackAnalyticsEvent(
+  metric: 'pageViews' | 'ctaClicks' | 'formStarts' | 'registrationsCount' | 'whatsappRedirects'
+): Promise<void> {
+  try {
+    const docRef = doc(db, ANALYTICS_COLLECTION, ANALYTICS_DOC_ID);
+    await setDoc(
+      docRef,
+      {
+        [metric]: increment(1),
+        lastUpdated: new Date().toISOString(),
+      },
+      { merge: true }
+    );
+  } catch (err) {
+    console.warn(`Não foi possível registrar métrica (${metric}):`, err);
+  }
 }
 
 /**
@@ -103,10 +152,9 @@ export function subscribeToAuditLogs(
  */
 export async function saveParticipant(participant: Participant): Promise<void> {
   const docRef = doc(db, PARTICIPANTS_COLLECTION, participant.id);
-  // Ensure required fields
   const cleanData: Record<string, unknown> = {
     ...participant,
-    status: participant.status || 'pending_payment',
+    status: participant.status || 'confirmed',
     registeredAt: participant.registeredAt || new Date().toISOString(),
   };
   await setDoc(docRef, cleanData, { merge: true });
@@ -138,12 +186,16 @@ export async function confirmParticipantPayment(
 ): Promise<void> {
   const docRef = doc(db, PARTICIPANTS_COLLECTION, participantId);
   const docSnap = await getDoc(docRef);
-  const participantData = docSnap.exists() ? (docSnap.data() as Participant) : null;
 
+  if (!docSnap.exists()) {
+    throw new Error('Participante não encontrado no banco de dados.');
+  }
+
+  const p = docSnap.data() as Participant;
   const now = new Date().toISOString();
+
   await updateDoc(docRef, {
     status: 'confirmed',
-    confirmedPresence: true,
     confirmedAt: now,
     confirmedBy: adminEmail,
     notes: note,
@@ -151,47 +203,51 @@ export async function confirmParticipantPayment(
 
   await recordAuditLog({
     action: 'CONFIRM_PAYMENT',
-    participantId,
-    participantName: participantData?.fullName || 'Atleta',
-    amount: participantData?.feeAmount || 0,
+    participantId: p.id,
+    participantName: p.fullName,
+    amount: p.feeAmount,
     adminEmail,
-    details: `Pagamento PIX confirmado para inscrição #${participantId}. ${note}`,
+    details: `Inscrição #${p.id} confirmada (${note}).`,
     timestamp: now,
   });
 }
 
 /**
- * Business Rule: Cancel registration and log event
+ * Business Rule: Cancel registration and record audit log
  */
 export async function cancelParticipantRegistration(
   participantId: string,
   adminEmail: string,
-  reason: string = 'Inscrição cancelada pela administração'
+  reason: string = 'Cancelado pela administração'
 ): Promise<void> {
   const docRef = doc(db, PARTICIPANTS_COLLECTION, participantId);
   const docSnap = await getDoc(docRef);
-  const participantData = docSnap.exists() ? (docSnap.data() as Participant) : null;
 
+  if (!docSnap.exists()) {
+    throw new Error('Participante não encontrado.');
+  }
+
+  const p = docSnap.data() as Participant;
   const now = new Date().toISOString();
+
   await updateDoc(docRef, {
     status: 'cancelled',
-    confirmedPresence: false,
     notes: reason,
   });
 
   await recordAuditLog({
     action: 'CANCEL_REGISTRATION',
-    participantId,
-    participantName: participantData?.fullName || 'Atleta',
-    amount: participantData?.feeAmount || 0,
+    participantId: p.id,
+    participantName: p.fullName,
+    amount: p.feeAmount,
     adminEmail,
-    details: `Inscrição cancelada: ${reason}`,
+    details: `Inscrição #${p.id} cancelada (${reason}).`,
     timestamp: now,
   });
 }
 
 /**
- * Delete a participant with audit logging
+ * Delete a participant document and log audit
  */
 export async function deleteParticipantDoc(
   participantId: string,
@@ -242,15 +298,16 @@ export async function seedInitialDataIfEmpty(
     const configSnap = await getDoc(configDocRef);
     if (!configSnap.exists()) {
       await setDoc(configDocRef, defaultConfig);
-      await recordAuditLog({
-        action: 'UPDATE_SETTINGS',
-        adminEmail: 'sistema@ecoarena.com.br',
-        details: 'Configurações padrão da Ecoarena inicializadas no Firestore.',
-        timestamp: new Date().toISOString(),
-      });
     }
 
-    // 2. Seed initial participants if empty
+    // 2. Seed Analytics if missing
+    const analyticsDocRef = doc(db, ANALYTICS_COLLECTION, ANALYTICS_DOC_ID);
+    const analyticsSnap = await getDoc(analyticsDocRef);
+    if (!analyticsSnap.exists()) {
+      await setDoc(analyticsDocRef, DEFAULT_ANALYTICS);
+    }
+
+    // 3. Seed initial participants if empty
     const participantsCol = collection(db, PARTICIPANTS_COLLECTION);
     const snap = await getDocs(query(participantsCol, limit(1)));
     if (snap.empty && initialParticipants.length > 0) {
@@ -260,13 +317,6 @@ export async function seedInitialDataIfEmpty(
         batch.set(pRef, p);
       }
       await batch.commit();
-
-      await recordAuditLog({
-        action: 'MANUAL_REGISTRATION',
-        adminEmail: 'sistema@ecoarena.com.br',
-        details: `Carga inicial de ${initialParticipants.length} atletas cadastrada no banco de dados.`,
-        timestamp: new Date().toISOString(),
-      });
     }
   } catch (err) {
     console.warn('Seed inicial do Firestore:', err);

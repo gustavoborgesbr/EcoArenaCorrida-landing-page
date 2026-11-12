@@ -26,9 +26,10 @@
         "notes": { "type": "string" },
         "confirmedAt": { "type": "string" },
         "confirmedBy": { "type": "string" },
-        "bibNumber": { "type": "number" }
+        "bibNumber": { "type": "number" },
+        "whatsappRedirected": { "type": "boolean" }
       },
-      "required": ["id", "fullName", "cpf", "phone", "distance", "shirtSize", "status", "feeAmount"]
+      "required": ["id", "fullName", "cpf", "distance", "status", "feeAmount"]
     },
     "EventConfig": {
       "title": "EventConfig",
@@ -53,6 +54,20 @@
         "updatedBy": { "type": "string" }
       },
       "required": ["eventName", "pixKey", "whatsAppNumber", "earlyBirdLimit", "earlyBirdFee", "standardFee"]
+    },
+    "AnalyticsStats": {
+      "title": "AnalyticsStats",
+      "description": "Page views, CTA clicks, form starts, registrations, and WhatsApp redirections",
+      "type": "object",
+      "properties": {
+        "pageViews": { "type": "number" },
+        "ctaClicks": { "type": "number" },
+        "formStarts": { "type": "number" },
+        "registrationsCount": { "type": "number" },
+        "whatsappRedirects": { "type": "number" },
+        "lastUpdated": { "type": "string" }
+      },
+      "required": ["pageViews", "ctaClicks", "whatsappRedirects"]
     },
     "AuditLog": {
       "title": "AuditLog",
@@ -90,6 +105,10 @@
     "/event_config/{configId}": {
       "schema": "EventConfig",
       "description": "Event global configuration parameters"
+    },
+    "/analytics_stats/{statId}": {
+      "schema": "AnalyticsStats",
+      "description": "Funnel metrics for page views, CTA clicks, and WhatsApp conversions"
     },
     "/audit_logs/{logId}": {
       "schema": "AuditLog",

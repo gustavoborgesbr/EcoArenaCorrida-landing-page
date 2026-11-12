@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Trophy, MessageCircle, MapPin, ShieldCheck, Lock, LogOut } from 'lucide-react';
+import { Trophy, MessageCircle, MapPin } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { EventConfig } from '../types/index.ts';
 
@@ -23,153 +23,133 @@ export const Footer: React.FC<FooterProps> = ({
   const [logoError, setLogoError] = useState(false);
 
   return (
-    <footer className="bg-slate-900 text-white border-t border-slate-800 pt-16 pb-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-12">
-          {/* Brand & mission */}
-          <div className="md:col-span-5 space-y-4">
-            <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-xl overflow-hidden bg-slate-800 border border-emerald-500/40 flex items-center justify-center text-white shadow-lg shadow-emerald-600/20 shrink-0">
+    <footer className="w-full max-w-full overflow-x-hidden bg-slate-50 text-slate-700 border-t border-slate-200/80 pt-8 pb-8">
+      <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 space-y-6 min-w-0">
+        <div className="grid grid-cols-1 sm:grid-cols-12 gap-6">
+          {/* Brand & Event Info */}
+          <div className="sm:col-span-7 space-y-3 min-w-0">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl overflow-hidden bg-slate-900 border border-emerald-500/40 flex items-center justify-center text-white shrink-0">
                 {!logoError ? (
                   <img
                     src="/assets/logo.png"
-                    alt="Ecoarena Mansão Verde"
+                    alt="Eco Arena Mansão Verde"
                     className="w-full h-full object-cover"
                     onError={() => setLogoError(true)}
                   />
                 ) : (
-                  <Trophy className="w-5 h-5 text-emerald-400" />
+                  <Trophy className="w-4 h-4 text-emerald-400" />
                 )}
               </div>
-              <span className="text-2xl font-black font-heading uppercase tracking-tight text-white">
-                ECOARENA MANSÃO VERDE
+              <span className="text-base sm:text-lg font-extrabold font-heading uppercase tracking-tight text-slate-900 truncate">
+                ECO ARENA · A MANSÃO VERDE
               </span>
             </div>
 
-            <p className="text-slate-400 text-xs sm:text-sm leading-relaxed max-w-sm">
-              Incentivando o esporte, a saúde e o bem-estar da nossa comunidade na Massagueira.
-              Venha correr, caminhar e superar marcas com a gente na orla da Lagoa Manguaba!
+            <p className="text-slate-600 text-xs leading-relaxed max-w-sm">
+              Comemoração dos 4 anos da Eco Arena na Massagueira. Corre de Sexta com Jó & Deyvisson + Paredão e Monster Energy Drink no dia 20/11 às 19h.
             </p>
 
-            <div className="pt-2 text-xs text-slate-300 space-y-1.5">
+            <div className="text-xs text-slate-600 space-y-1">
               <div className="flex items-center gap-2">
-                <MessageCircle className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>WhatsApp Oficial: <strong>{config.whatsAppNumber}</strong></span>
+                <MessageCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <a
+                  href={
+                    /^https?:\/\//i.test(config.whatsAppNumber)
+                      ? config.whatsAppNumber
+                      : `https://${config.whatsAppNumber.replace(/^\/+/, '')}`
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-emerald-700 hover:text-emerald-800 font-semibold hover:underline truncate"
+                >
+                  Falar no WhatsApp Oficial da Eco Arena
+                </a>
               </div>
               <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-emerald-400 shrink-0" />
+                <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                 <span className="truncate">{config.locationName}</span>
               </div>
             </div>
           </div>
 
-          {/* Quick links */}
-          <div className="md:col-span-3 space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-400">
-              Navegação Rápida
+          {/* Quick Links + Subtle Admin Button Below Links */}
+          <div className="sm:col-span-5 space-y-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-700">
+              Atalhos Rápidos
             </h4>
-            <ul className="space-y-2 text-xs text-slate-400">
+            <ul className="space-y-1.5 text-xs text-slate-600">
               <li>
                 <button
                   type="button"
                   onClick={onScrollToForm}
-                  className="hover:text-white transition-colors cursor-pointer"
+                  className="hover:text-emerald-800 transition-colors cursor-pointer text-emerald-700 font-semibold"
                 >
-                  Garantir Inscrição (R$ {config.earlyBirdFee.toFixed(2).replace('.', ',')})
+                  Fazer Inscrição Antecipada (R$ {Math.round(config.earlyBirdFee || 10)})
                 </button>
-              </li>
-              <li>
-                <a href="#percurso" className="hover:text-white transition-colors text-emerald-400 font-bold">
-                  Mapa do Percurso (Massagueira)
-                </a>
-              </li>
-              <li>
-                <a href="#detalhes" className="hover:text-white transition-colors">
-                  Percursos (3km, 5km, 10km)
-                </a>
-              </li>
-              <li>
-                <a href="#detalhes" className="hover:text-white transition-colors">
-                  Kit do Atleta & Cronograma
-                </a>
               </li>
               <li>
                 <button
                   type="button"
                   onClick={onOpenLookup}
-                  className="hover:text-white transition-colors cursor-pointer"
+                  className="hover:text-slate-900 transition-colors cursor-pointer"
                 >
                   Consultar Minha Inscrição
                 </button>
               </li>
               <li>
-                <a href="#faq" className="hover:text-white transition-colors">
-                  Perguntas Frequentes
+                <a href="#detalhes" className="hover:text-slate-900 transition-colors">
+                  Benefícios & 5 Sorteios
+                </a>
+              </li>
+              <li>
+                <a href="#percurso" className="hover:text-slate-900 transition-colors">
+                  Localização & Percurso 5 Km
                 </a>
               </li>
             </ul>
-          </div>
 
-          {/* Organizer / Admin access */}
-          <div className="md:col-span-4 space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-1.5">
-              <span>Área do Organizador</span>
-              {currentUser && (
-                <span className="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded-full font-bold">
-                  Conectado
-                </span>
-              )}
-            </h4>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              {currentUser
-                ? `Logado como ${currentUser.email || 'Administrador'}. Acesse o painel de atletas, aprove comprovantes do WhatsApp e audite o evento.`
-                : 'Área reservada para a equipe organizadora gerenciar inscrições, conferir comprovantes do WhatsApp e configurar parâmetros da corrida.'}
-            </p>
-
-            {currentUser ? (
-              <div className="flex flex-wrap items-center gap-2 pt-1">
+            {/* Small, subtle button right below the footer links */}
+            <div className="pt-1.5">
+              {currentUser ? (
+                <div className="inline-flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={onOpenAdmin}
+                    className="px-2.5 py-1 rounded-lg text-[11px] font-medium text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors cursor-pointer"
+                  >
+                    Painel Admin (Conectado)
+                  </button>
+                  {onLogout && (
+                    <button
+                      type="button"
+                      onClick={onLogout}
+                      className="px-2 py-1 rounded-lg text-[11px] text-slate-500 hover:text-rose-600 transition-colors cursor-pointer"
+                    >
+                      Sair
+                    </button>
+                  )}
+                </div>
+              ) : (
                 <button
                   type="button"
                   onClick={onOpenAdmin}
-                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-extrabold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md transition-colors cursor-pointer"
+                  className="px-2.5 py-1 rounded-lg text-[10px] font-medium text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200/80 border border-slate-200/90 transition-colors cursor-pointer"
                 >
-                  <ShieldCheck className="w-4 h-4 text-white" />
-                  <span>Painel de Inscritos</span>
+                  Acesso Organizador
                 </button>
-                {onLogout && (
-                  <button
-                    type="button"
-                    onClick={onLogout}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 border border-rose-900/60 transition-colors cursor-pointer"
-                    title="Encerrar sessão de Administrador"
-                  >
-                    <LogOut className="w-3.5 h-3.5" />
-                    <span>Sair</span>
-                  </button>
-                )}
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={onOpenAdmin}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 transition-colors cursor-pointer group"
-                title="Acesso exclusivo para administradores"
-              >
-                <Lock className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-400 transition-colors" />
-                <span>Acesso Administrativo (Login)</span>
-              </button>
-            )}
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Copyright and Legal */}
-        <div className="border-t border-slate-800 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 text-center sm:text-left">
-          <p>© {new Date().getFullYear()} Equarena Sports. Todos os direitos reservados.</p>
-          <p className="flex items-center gap-1 justify-center">
-            Feito para corredores com energia e paixão pelo esporte.
-          </p>
+        {/* Bottom Copyright */}
+        <div className="border-t border-slate-200/80 pt-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-slate-400 text-center sm:text-left">
+          <p>© {new Date().getFullYear()} Eco Arena. Todos os direitos reservados.</p>
+          <p>Massagueira · Marechal Deodoro - AL</p>
         </div>
       </div>
     </footer>
   );
 };
+

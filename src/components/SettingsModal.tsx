@@ -72,23 +72,38 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <span>Chave Pix & WhatsApp da Equarena</span>
             </div>
 
-            <div>
-              <label htmlFor="whatsAppNumber" className="block text-xs font-semibold text-slate-700 mb-1">
-                WhatsApp Oficial da Equarena (Onde os comprovantes serão recebidos)
-              </label>
-              <input
-                id="whatsAppNumber"
-                type="text"
-                value={formData.whatsAppNumber}
-                onChange={(e) => {
-                  const val = formatPhone(e.target.value);
-                  setFormData({ ...formData, whatsAppNumber: val, pixKey: val });
-                }}
-                className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-emerald-600 font-mono shadow-sm"
-              />
-              <span className="text-[11px] text-slate-500 mt-1 block">
-                *O número do Pix é automaticamente o mesmo número do WhatsApp da Equarena.
-              </span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="whatsAppNumber" className="block text-xs font-semibold text-slate-700 mb-1">
+                  Link ou Número do WhatsApp Oficial
+                </label>
+                <input
+                  id="whatsAppNumber"
+                  type="text"
+                  value={formData.whatsAppNumber}
+                  onChange={(e) => {
+                    setFormData({ ...formData, whatsAppNumber: e.target.value });
+                  }}
+                  placeholder="https://wa.me/message/HVASE7FUQGZ4B1"
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-emerald-600 font-mono shadow-sm"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="pixKey" className="block text-xs font-semibold text-slate-700 mb-1">
+                  Chave Pix da Eco Arena
+                </label>
+                <input
+                  id="pixKey"
+                  type="text"
+                  value={formData.pixKey}
+                  onChange={(e) => {
+                    setFormData({ ...formData, pixKey: e.target.value });
+                  }}
+                  placeholder="(82) 99999-0000"
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-emerald-600 font-mono shadow-sm"
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -154,18 +169,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
               <div>
                 <label htmlFor="earlyBirdFee" className="block text-xs font-semibold text-slate-700 mb-1">
-                  Taxa Promocional (R$)
+                  Taxa Promocional (R$ 0 = Grátis)
                 </label>
                 <input
                   id="earlyBirdFee"
                   type="number"
                   step="0.5"
-                  min={1}
+                  min={0}
                   value={formData.earlyBirdFee}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      earlyBirdFee: parseFloat(e.target.value) || 5,
+                      earlyBirdFee: parseFloat(e.target.value) || 0,
                     })
                   }
                   className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-emerald-600 font-mono shadow-sm"
@@ -174,18 +189,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
               <div>
                 <label htmlFor="standardFee" className="block text-xs font-semibold text-slate-700 mb-1">
-                  Taxa Normal (R$)
+                  Taxa Normal (R$ 0 = Grátis)
                 </label>
                 <input
                   id="standardFee"
                   type="number"
                   step="1"
-                  min={5}
+                  min={0}
                   value={formData.standardFee}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      standardFee: parseFloat(e.target.value) || 25,
+                      standardFee: parseFloat(e.target.value) || 0,
                     })
                   }
                   className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-emerald-600 font-mono shadow-sm"

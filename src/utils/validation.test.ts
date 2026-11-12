@@ -43,25 +43,25 @@ test('validatePhone checks valid length', () => {
 });
 
 test('calculateRegistrationFee respects early bird 100 spots limit', () => {
-  // First 100 registered should get R$ 5,00
+  // First 100 registered should get R$ 10,00
   const early1 = calculateRegistrationFee(0);
-  assert.equal(early1.fee, 5);
+  assert.equal(early1.fee, 10);
   assert.equal(early1.isEarlyBird, true);
   assert.equal(early1.remainingEarlyBirdSpots, 100);
 
   const early99 = calculateRegistrationFee(99);
-  assert.equal(early99.fee, 5);
+  assert.equal(early99.fee, 10);
   assert.equal(early99.isEarlyBird, true);
   assert.equal(early99.remainingEarlyBirdSpots, 1);
 
-  // Spot 100 and after should be regular fee (e.g. 25)
+  // Spot 100 and after should be regular fee (10 by default)
   const regular100 = calculateRegistrationFee(100);
-  assert.equal(regular100.fee, 25);
+  assert.equal(regular100.fee, 10);
   assert.equal(regular100.isEarlyBird, false);
   assert.equal(regular100.remainingEarlyBirdSpots, 0);
 
   const regular150 = calculateRegistrationFee(150);
-  assert.equal(regular150.fee, 25);
+  assert.equal(regular150.fee, 10);
   assert.equal(regular150.isEarlyBird, false);
 });
 
@@ -76,15 +76,14 @@ test('buildWhatsAppMessage produces comprehensive confirmation text', () => {
     cpf: '111.444.777-35',
     rg: '12.345.678-9',
     distance: '5 km',
-    fee: 5,
+    fee: 10,
     registrationId: 'EQ-042',
     isEarlyBird: true,
   });
 
   assert.ok(msg.includes('Carlos Silva'));
   assert.ok(msg.includes('111.444.777-35'));
-  assert.ok(msg.includes('R$ 5,00'));
-  assert.ok(msg.includes('Lote Promocional'));
+  assert.ok(msg.includes('R$ 10,00'));
   assert.ok(msg.includes('#EQ-042'));
 });
 

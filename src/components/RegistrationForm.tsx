@@ -1,114 +1,109 @@
-import React, { useState } from 'react';
-import confetti from 'canvas-confetti';
+import React, { useState, useRef } from 'react';
 import {
   User,
   CreditCard,
   Phone,
-  FileText,
+  Mail,
   CheckSquare,
   Square,
-  ShieldCheck,
   AlertCircle,
-  Sparkles,
-  ArrowRight,
-  Flame,
+  ShieldCheck,
+  MessageCircle,
+  X,
 } from 'lucide-react';
-import { EventConfig, ModalityDistance, Participant, ShirtSize } from '../types/index.ts';
+import { AnimatePresence, motion } from 'motion/react';
+import { EventConfig, ModalityDistance, Participant } from '../types/index.ts';
 import {
+  calculateRegistrationFee,
   formatCPF,
   formatPhone,
-  formatRG,
   validateCPF,
   validatePhone,
-  calculateRegistrationFee,
+  buildWhatsAppMessage,
+  generateWhatsAppLink,
 } from '../utils/validation.ts';
 
 interface RegistrationFormProps {
+  isOpen: boolean;
+  onClose: () => void;
   config: EventConfig;
   participants: Participant[];
   selectedDistance?: ModalityDistance;
-  onRegistered: (participant: Participant) => void;
+  onRegistered: (participant: Participant, whatsAppUrl: string) => void;
+  onFormStart?: () => void;
 }
 
 export const RegistrationForm: React.FC<RegistrationFormProps> = ({
+  isOpen,
+  onClose,
   config,
   participants,
-  selectedDistance = '5km',
   onRegistered,
+  onFormStart,
 }) => {
   const [fullName, setFullName] = useState('');
-  const [rg, setRg] = useState('');
   const [cpf, setCpf] = useState('');
+  const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [distance, setDistance] = useState<ModalityDistance>(selectedDistance);
-  const [shirtSize, setShirtSize] = useState<ShirtSize>('M');
   const [confirmPresence, setConfirmPresence] = useState(true);
-  const [emergencyName, setEmergencyName] = useState('');
-  const [emergencyPhone, setEmergencyPhone] = useState('');
-  const [agreeTerms, setAgreeTerms] = useState(true);
-
-  // Validation errors
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const hasStartedRef = useRef(false);
 
-  // Calculate pricing tier
+  const activeCount = participants.filter((p) => p.status !== 'cancelled').length;
   const feeInfo = calculateRegistrationFee(
-    participants.length,
+    activeCount,
     config.earlyBirdLimit,
-    config.earlyBirdFee,
-    config.standardFee
+    config.earlyBirdFee || 10,
+    config.standardFee || 10
   );
 
-  const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatCPF(e.target.value);
-    setCpf(formatted);
-    if (errors.cpf) {
-      setErrors((prev) => ({ ...prev, cpf: '' }));
+  const handleFieldFocus = () => {
+    if (!hasStartedRef.current) {
+      hasStartedRef.current = true;
+      if (onFormStart) onFormStart();
     }
+  };
+
+  const handleCPFChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCpf(formatCPF(e.target.value));
+    if (errors.cpf) setErrors((prev) => ({ ...prev, cpf: '' }));
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatPhone(e.target.value);
-    setPhone(formatted);
-    if (errors.phone) {
-      setErrors((prev) => ({ ...prev, phone: '' }));
-    }
+    setPhone(formatPhone(e.target.value));
+    if (errors.phone) setErrors((prev) => ({ ...prev, phone: '' }));
   };
 
-  const handleEmergencyPhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatPhone(e.target.value);
-    setEmergencyPhone(formatted);
-  };
-
-  const validate = (): boolean => {
+  const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!fullName.trim() || fullName.trim().length < 4) {
-      newErrors.fullName = 'Informe o nome completo do atleta (mínimo 4 caracteres).';
+    if (!fullName.trim() || fullName.trim().split(' ').length < 2) {
+      newErrors.fullName = 'Informe seu nome e sobrenome.';
     }
 
-    if (!rg.trim() || rg.trim().length < 4) {
-      newErrors.rg = 'Informe o RG / Documento de Identidade.';
+    if (!validateCPF(cpf)) {
+      newErrors.cpf = 'CPF inválido. Confira os 11 dígitos.';
+    } else {
+      const cleanInputCpf = cpf.replace(/\D/g, '');
+      const alreadyExists = participants.some(
+        (p) => p.cpf.replace(/\D/g, '') === cleanInputCpf && p.status !== 'cancelled'
+      );
+      if (alreadyExists) {
+        newErrors.cpf = 'Este CPF já possui inscrição! Use "Consultar" no topo.';
+      }
     }
 
-    if (!cpf.trim()) {
-      newErrors.cpf = 'Informe o número do CPF.';
-    } else if (!validateCPF(cpf)) {
-      newErrors.cpf = 'CPF inválido. Verifique os 11 dígitos.';
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      newErrors.email = 'Digite um e-mail válido ou deixe em branco.';
     }
 
-    if (!phone.trim()) {
-      newErrors.phone = 'Informe o número de WhatsApp para confirmação.';
-    } else if (!validatePhone(phone)) {
-      newErrors.phone = 'Número de telefone/WhatsApp incompleto.';
+    if (phone.trim() && !validatePhone(phone)) {
+      newErrors.phone = 'Digite o telefone com DDD ou deixe em branco.';
     }
 
     if (!confirmPresence) {
-      newErrors.confirmPresence = 'É obrigatório confirmar a sua presença no evento.';
-    }
-
-    if (!agreeTerms) {
-      newErrors.agreeTerms = 'Você precisa concordar com as regras e declaração de saúde.';
+      newErrors.confirmPresence = 'Marque a confirmação para reservar seus benefícios.';
     }
 
     setErrors(newErrors);
@@ -117,417 +112,298 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!validate()) {
-      const firstErrorKey = Object.keys(errors)[0];
-      const el = document.getElementById(firstErrorKey);
-      if (el) el.focus();
-      return;
-    }
+    if (!validateForm()) return;
 
     setIsSubmitting(true);
 
-    try {
-      confetti({
-        particleCount: 80,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#16a34a', '#22c55e', '#10b981', '#3b82f6'],
-      });
-    } catch {
-      // Ignore in headless
-    }
+    const nextNumber = participants.length + 1;
+    const id = `EQ-${String(nextNumber).padStart(3, '0')}`;
+    const bibNumber = 100 + nextNumber;
+    const fee = feeInfo.fee > 0 ? feeInfo.fee : 10;
 
-    const nextBib = 100 + participants.length + 1;
     const newParticipant: Participant = {
-      id: `EQ-${String(participants.length + 1).padStart(3, '0')}`,
-      bibNumber: nextBib,
+      id,
+      bibNumber,
       fullName: fullName.trim(),
-      rg: formatRG(rg),
-      cpf: cpf.trim(),
-      phone: phone.trim(),
-      distance,
-      shirtSize,
+      rg: 'ISENTO',
+      cpf,
+      email: email.trim() || undefined,
+      phone: phone.trim() || 'Via WhatsApp',
+      distance: '5km',
+      shirtSize: 'M',
       confirmedPresence: confirmPresence,
-      emergencyName: emergencyName.trim(),
-      emergencyPhone: emergencyPhone.trim(),
+      emergencyName: '',
+      emergencyPhone: '',
       isEarlyBird: feeInfo.isEarlyBird,
-      feeAmount: feeInfo.fee,
+      feeAmount: fee,
       status: 'pending_payment',
       registeredAt: new Date().toISOString(),
       paymentMethod: 'pix',
+      whatsappRedirected: true,
     };
 
-    setTimeout(() => {
-      setIsSubmitting(false);
-      onRegistered(newParticipant);
-    }, 400);
+    const whatsAppMessage = buildWhatsAppMessage({
+      fullName: newParticipant.fullName,
+      cpf: newParticipant.cpf,
+      email: email.trim(),
+      phone: phone.trim(),
+      distance: '5 Km',
+      fee: newParticipant.feeAmount,
+      registrationId: newParticipant.id,
+      bibNumber: newParticipant.bibNumber,
+      isEarlyBird: newParticipant.isEarlyBird,
+    });
+
+    const whatsAppUrl = generateWhatsAppLink(config.whatsAppNumber, whatsAppMessage);
+
+    setIsSubmitting(false);
+    onRegistered(newParticipant, whatsAppUrl);
   };
 
   return (
-    <section id="inscricao" className="py-16 sm:py-24 bg-slate-50 text-slate-900 relative border-b border-slate-200">
-      <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Form Card */}
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
-          {/* Header Bar */}
-          <div className="bg-gradient-to-r from-emerald-600 via-green-600 to-emerald-700 p-6 sm:p-8 text-white">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/20 text-xs font-bold uppercase tracking-wider mb-2">
-                  <Flame className="w-3.5 h-3.5 text-amber-300" />
-                  Inscrição Oficial
-                </div>
-                <h2 className="text-2xl sm:text-4xl font-black uppercase font-heading tracking-tight text-white">
-                  FORMULÁRIO DE INSCRIÇÃO & CONFIRMAÇÃO
+    <AnimatePresence>
+      {isOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="registration-modal-title"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3.5 sm:p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto"
+        >
+          {/* Modal Card - Clicking outside on backdrop does NOT close; only the X button closes */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 12 }}
+            transition={{ type: 'spring', stiffness: 340, damping: 28 }}
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-md bg-white rounded-2xl border border-slate-200 shadow-2xl overflow-hidden my-auto text-slate-800"
+          >
+            {/* Modal Header with X close button */}
+            <div className="bg-emerald-600 px-4 py-4 text-white flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <span className="text-[11px] font-medium text-emerald-100 block truncate">
+                  Corre de Sexta • 20/11 às 19h • 5 Km
+                </span>
+                <h2
+                  id="registration-modal-title"
+                  className="text-base sm:text-lg font-bold tracking-tight text-white truncate"
+                >
+                  Inscrição Antecipada (R$ {(feeInfo.fee || 10).toFixed(2).replace('.', ',')})
                 </h2>
-                <p className="text-emerald-100 text-xs sm:text-sm mt-1">
-                  Preencha seus dados para garantir seu número de peito na Corrida Arena • 4 Anos de Eco Arena.
-                </p>
               </div>
 
-              {/* Fee Pill */}
-              <div className="bg-black/30 backdrop-blur-md rounded-2xl p-3.5 sm:p-4 text-center border border-white/15 shrink-0">
-                <span className="text-[10px] sm:text-xs uppercase font-extrabold text-amber-200 block">
-                  {feeInfo.isEarlyBird ? 'Taxa Promocional (100 Primeiros)' : 'Taxa de Inscrição'}
-                </span>
-                <span className="text-2xl sm:text-3xl font-black text-white font-heading">
-                  R$ {feeInfo.fee.toFixed(2).replace('.', ',')}
-                </span>
-                {feeInfo.isEarlyBird && (
-                  <span className="block text-[10px] text-amber-200 mt-0.5 font-bold">
-                    Restam {feeInfo.remainingEarlyBirdSpots} vagas a R$ 5,00!
-                  </span>
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Fechar formulário de inscrição"
+                title="Fechar"
+                className="p-2 rounded-xl bg-black/15 hover:bg-black/30 text-white transition-colors cursor-pointer shrink-0"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Form Body */}
+            <form onSubmit={handleSubmit} className="p-4 sm:p-5 space-y-3.5 max-h-[82vh] overflow-y-auto" noValidate>
+              <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-200/80">
+                Informe apenas seu <strong className="text-slate-800">Nome e CPF</strong> para gerar o{' '}
+                <strong className="text-slate-800">Pix de R$ 10,00</strong> e confirmar direto pelo seu{' '}
+                <strong className="text-slate-800">WhatsApp</strong>.
+              </p>
+
+              {/* 1. Nome Completo (Obrigatório) */}
+              <div>
+                <label htmlFor="fullName" className="block text-xs font-semibold text-slate-700 mb-1">
+                  Nome Completo <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    id="fullName"
+                    type="text"
+                    autoComplete="name"
+                    onFocus={handleFieldFocus}
+                    value={fullName}
+                    onChange={(e) => {
+                      setFullName(e.target.value);
+                      if (errors.fullName) setErrors((prev) => ({ ...prev, fullName: '' }));
+                    }}
+                    placeholder="Ex: Lucas Fernandes"
+                    className={`w-full bg-slate-50 border ${
+                      errors.fullName ? 'border-red-400' : 'border-slate-200 focus:border-emerald-600'
+                    } rounded-xl pl-9 pr-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white transition-colors`}
+                  />
+                </div>
+                {errors.fullName && (
+                  <p className="mt-1 text-[11px] text-red-600 flex items-center gap-1 font-medium">
+                    <AlertCircle className="w-3 h-3 shrink-0" />
+                    {errors.fullName}
+                  </p>
                 )}
               </div>
-            </div>
-          </div>
 
-          {/* Form Content */}
-          <form onSubmit={handleSubmit} className="p-6 sm:p-10 space-y-8" noValidate>
-            {/* Step 1: Personal info requested by user */}
-            <div className="space-y-5">
-              <h3 className="text-sm font-extrabold uppercase tracking-wider text-emerald-700 flex items-center gap-2 border-b border-slate-200 pb-2">
-                <User className="w-4 h-4 text-emerald-600" />
-                1. Dados Pessoais do Atleta
-              </h3>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                {/* Nome Completo */}
-                <div className="sm:col-span-2">
-                  <label htmlFor="fullName" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    Nome Completo <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <input
-                      id="fullName"
-                      type="text"
-                      value={fullName}
-                      onChange={(e) => {
-                        setFullName(e.target.value);
-                        if (errors.fullName) setErrors((prev) => ({ ...prev, fullName: '' }));
-                      }}
-                      placeholder="Ex: Carlos Eduardo de Oliveira"
-                      className={`w-full bg-slate-50 border ${
-                        errors.fullName ? 'border-red-500' : 'border-slate-300 focus:border-emerald-600'
-                      } rounded-xl pl-10 pr-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none transition-colors shadow-sm`}
-                    />
-                  </div>
-                  {errors.fullName && (
-                    <p className="mt-1 text-xs text-red-600 flex items-center gap-1 font-semibold">
-                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                      {errors.fullName}
-                    </p>
-                  )}
+              {/* 2. CPF (Obrigatório) */}
+              <div>
+                <label htmlFor="cpf" className="block text-xs font-semibold text-slate-700 mb-1">
+                  CPF <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    id="cpf"
+                    type="tel"
+                    inputMode="numeric"
+                    maxLength={14}
+                    onFocus={handleFieldFocus}
+                    value={cpf}
+                    onChange={handleCPFChange}
+                    placeholder="000.000.000-00"
+                    className={`w-full bg-slate-50 border ${
+                      errors.cpf ? 'border-red-400' : 'border-slate-200 focus:border-emerald-600'
+                    } rounded-xl pl-9 pr-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white transition-colors font-mono`}
+                  />
                 </div>
+                {errors.cpf && (
+                  <p className="mt-1 text-[11px] text-red-600 flex items-center gap-1 font-medium">
+                    <AlertCircle className="w-3 h-3 shrink-0" />
+                    {errors.cpf}
+                  </p>
+                )}
+              </div>
 
-                {/* Identidade / RG */}
+              {/* 3. E-mail (Opcional) & 4. Telefone (Opcional) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-0.5">
                 <div>
-                  <label htmlFor="rg" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    Identidade / RG <span className="text-red-500">*</span>
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label htmlFor="email" className="text-xs font-semibold text-slate-700">
+                      E-mail
+                    </label>
+                    <span className="text-[10px] font-medium text-slate-400">Opcional</span>
+                  </div>
                   <div className="relative">
-                    <FileText className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
-                      id="rg"
-                      type="text"
-                      value={rg}
+                      id="email"
+                      type="email"
+                      inputMode="email"
+                      autoComplete="email"
+                      onFocus={handleFieldFocus}
+                      value={email}
                       onChange={(e) => {
-                        setRg(e.target.value);
-                        if (errors.rg) setErrors((prev) => ({ ...prev, rg: '' }));
+                        setEmail(e.target.value);
+                        if (errors.email) setErrors((prev) => ({ ...prev, email: '' }));
                       }}
-                      placeholder="Ex: 12.345.678-9"
+                      placeholder="seuemail@exemplo.com"
                       className={`w-full bg-slate-50 border ${
-                        errors.rg ? 'border-red-500' : 'border-slate-300 focus:border-emerald-600'
-                      } rounded-xl pl-10 pr-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none transition-colors shadow-sm`}
+                        errors.email ? 'border-red-400' : 'border-slate-200 focus:border-emerald-600'
+                      } rounded-xl pl-9 pr-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white transition-colors`}
                     />
                   </div>
-                  {errors.rg && (
-                    <p className="mt-1 text-xs text-red-600 flex items-center gap-1 font-semibold">
-                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                      {errors.rg}
+                  {errors.email && (
+                    <p className="mt-1 text-[11px] text-red-600 flex items-center gap-1 font-medium">
+                      <AlertCircle className="w-3 h-3 shrink-0" />
+                      {errors.email}
                     </p>
                   )}
                 </div>
 
-                {/* CPF */}
                 <div>
-                  <label htmlFor="cpf" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    CPF <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <CreditCard className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <input
-                      id="cpf"
-                      type="text"
-                      maxLength={14}
-                      value={cpf}
-                      onChange={handleCpfChange}
-                      placeholder="000.000.000-00"
-                      className={`w-full bg-slate-50 border ${
-                        errors.cpf ? 'border-red-500' : 'border-slate-300 focus:border-emerald-600'
-                      } rounded-xl pl-10 pr-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none transition-colors font-mono shadow-sm`}
-                    />
+                  <div className="flex items-center justify-between mb-1">
+                    <label htmlFor="phone" className="text-xs font-semibold text-slate-700">
+                      Telefone
+                    </label>
+                    <span className="text-[10px] font-medium text-slate-400">Opcional</span>
                   </div>
-                  {errors.cpf && (
-                    <p className="mt-1 text-xs text-red-600 flex items-center gap-1 font-semibold">
-                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                      {errors.cpf}
-                    </p>
-                  )}
-                </div>
-
-                {/* WhatsApp / Celular */}
-                <div className="sm:col-span-2">
-                  <label htmlFor="phone" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    WhatsApp / Telefone <span className="text-red-500">*</span>
-                  </label>
                   <div className="relative">
-                    <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
                       id="phone"
-                      type="text"
+                      type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
                       maxLength={15}
+                      onFocus={handleFieldFocus}
                       value={phone}
                       onChange={handlePhoneChange}
-                      placeholder="(00) 00000-0000"
+                      placeholder="(82) 99999-0000"
                       className={`w-full bg-slate-50 border ${
-                        errors.phone ? 'border-red-500' : 'border-slate-300 focus:border-emerald-600'
-                      } rounded-xl pl-10 pr-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:outline-none transition-colors font-mono shadow-sm`}
+                        errors.phone ? 'border-red-400' : 'border-slate-200 focus:border-emerald-600'
+                      } rounded-xl pl-9 pr-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white transition-colors font-mono`}
                     />
                   </div>
-                  <span className="text-[11px] text-slate-500 mt-1 block">
-                    Você usará este mesmo número para enviar o comprovante do Pix para a Equarena.
-                  </span>
                   {errors.phone && (
-                    <p className="mt-1 text-xs text-red-600 flex items-center gap-1 font-semibold">
-                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <p className="mt-1 text-[11px] text-red-600 flex items-center gap-1 font-medium">
+                      <AlertCircle className="w-3 h-3 shrink-0" />
                       {errors.phone}
                     </p>
                   )}
                 </div>
               </div>
-            </div>
 
-            {/* Step 2: Modality & Kit */}
-            <div className="space-y-5">
-              <h3 className="text-sm font-extrabold uppercase tracking-wider text-emerald-700 flex items-center gap-2 border-b border-slate-200 pb-2">
-                <Sparkles className="w-4 h-4 text-emerald-600" />
-                2. Modalidade & Kit da Prova
-              </h3>
-
-              {/* Distance Selection */}
+              {/* Presence & Benefits Checkbox */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                  Selecione sua Distância <span className="text-red-500">*</span>
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {[
-                    { id: '3km' as const, label: '3 km Caminhada', desc: 'Iniciantes & Família' },
-                    { id: '5km' as const, label: '5 km Corrida', desc: 'Mais popular' },
-                    { id: '10km' as const, label: '10 km Corrida', desc: 'Desafio Pro' },
-                  ].map((item) => {
-                    const isSelected = distance === item.id;
-                    return (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => setDistance(item.id)}
-                        className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
-                          isSelected
-                            ? 'bg-emerald-50 border-emerald-600 text-slate-900 shadow-sm ring-1 ring-emerald-600'
-                            : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-900'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="font-bold text-sm text-slate-900">{item.label}</span>
-                          <span
-                            className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                              isSelected ? 'border-emerald-600 bg-emerald-600' : 'border-slate-400'
-                            }`}
-                          >
-                            {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
-                          </span>
-                        </div>
-                        <span className="text-xs text-slate-500 block">{item.desc}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* T-shirt size */}
-              <div>
-                <label htmlFor="shirtSize" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                  Tamanho da Camiseta Dry-Fit Oficial
-                </label>
-                <div className="flex flex-wrap gap-2.5">
-                  {(['PP', 'P', 'M', 'G', 'GG', 'XG'] as ShirtSize[]).map((size) => (
-                    <button
-                      key={size}
-                      type="button"
-                      onClick={() => setShirtSize(size)}
-                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                        shirtSize === size
-                          ? 'bg-emerald-600 text-white shadow-md'
-                          : 'bg-slate-100 border border-slate-200 text-slate-700 hover:border-slate-300 hover:text-slate-900'
-                      }`}
-                    >
-                      {size}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Emergency Contact */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                <div>
-                  <label htmlFor="emergencyName" className="block text-xs font-semibold text-slate-600 mb-1">
-                    Nome do Contato de Emergência (Opcional)
-                  </label>
-                  <input
-                    id="emergencyName"
-                    type="text"
-                    value={emergencyName}
-                    onChange={(e) => setEmergencyName(e.target.value)}
-                    placeholder="Ex: Mãe, Cônjuge ou Amigo"
-                    className="w-full bg-slate-50 border border-slate-300 focus:border-emerald-600 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none shadow-sm"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="emergencyPhone" className="block text-xs font-semibold text-slate-600 mb-1">
-                    Telefone de Emergência (Opcional)
-                  </label>
-                  <input
-                    id="emergencyPhone"
-                    type="text"
-                    maxLength={15}
-                    value={emergencyPhone}
-                    onChange={handleEmergencyPhoneChange}
-                    placeholder="(00) 00000-0000"
-                    className="w-full bg-slate-50 border border-slate-300 focus:border-emerald-600 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none font-mono shadow-sm"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Step 3: Presence confirmation */}
-            <div className="space-y-4 pt-2 border-t border-slate-200">
-              <div
-                onClick={() => {
-                  setConfirmPresence(!confirmPresence);
-                  if (errors.confirmPresence) {
-                    setErrors((prev) => ({ ...prev, confirmPresence: '' }));
-                  }
-                }}
-                className={`p-4 rounded-2xl border cursor-pointer transition-all flex items-start gap-3.5 ${
-                  confirmPresence
-                    ? 'bg-emerald-50 border-emerald-300 text-slate-900 shadow-sm'
-                    : 'bg-slate-50 border-slate-200 text-slate-600'
-                }`}
-              >
-                <div className="mt-0.5 text-emerald-600 shrink-0">
-                  {confirmPresence ? (
-                    <CheckSquare className="w-5 h-5 text-emerald-600" />
-                  ) : (
-                    <Square className="w-5 h-5 text-slate-400" />
-                  )}
-                </div>
-                <div>
-                  <div className="font-bold text-sm text-slate-900 flex items-center gap-2">
-                    <span>SIM! Confirmo expressamente minha presença na Corrida Arena (4 Anos Eco Arena).</span>
-                    <span className="text-[10px] uppercase font-extrabold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-200">
-                      Obrigatório
-                    </span>
+                <div
+                  onClick={() => {
+                    setConfirmPresence(!confirmPresence);
+                    if (errors.confirmPresence) {
+                      setErrors((prev) => ({ ...prev, confirmPresence: '' }));
+                    }
+                  }}
+                  className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start gap-2.5 ${
+                    confirmPresence
+                      ? 'bg-emerald-50/60 border-emerald-200 text-slate-800'
+                      : 'bg-slate-50 border-slate-200 text-slate-600'
+                  }`}
+                >
+                  <div className="mt-0.5 text-emerald-600 shrink-0">
+                    {confirmPresence ? (
+                      <CheckSquare className="w-4 h-4 text-emerald-600" />
+                    ) : (
+                      <Square className="w-4 h-4 text-slate-400" />
+                    )}
                   </div>
-                  <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                    Ao confirmar, você garante seu número de peito, Monster Energy Drink na largada, show ao vivo com os cantores Joy Davidson e participação nos 5 sorteios imperdíveis de aniversário, com a taxa promocional de apenas R$ {feeInfo.fee.toFixed(2).replace('.', ',')} para os 100 primeiros atletas.
+                  <div className="text-[11px] sm:text-xs leading-relaxed text-slate-600">
+                    <span className="font-semibold text-slate-800 block">
+                      Quero garantir minha inscrição antecipada (R$ 10,00)
+                    </span>
+                    Inclui Monster Energy, participação nos 5 sorteios, hidratação e número de peito.
+                  </div>
+                </div>
+                {errors.confirmPresence && (
+                  <p className="mt-1 text-[11px] text-red-600 flex items-center gap-1 font-medium">
+                    <AlertCircle className="w-3 h-3 shrink-0" />
+                    {errors.confirmPresence}
                   </p>
-                </div>
-              </div>
-              {errors.confirmPresence && (
-                <p className="text-xs text-red-600 flex items-center gap-1 font-semibold">
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                  {errors.confirmPresence}
-                </p>
-              )}
-
-              {/* Health and Terms Checkbox */}
-              <div
-                onClick={() => {
-                  setAgreeTerms(!agreeTerms);
-                  if (errors.agreeTerms) setErrors((prev) => ({ ...prev, agreeTerms: '' }));
-                }}
-                className="flex items-start gap-3 cursor-pointer text-xs text-slate-600 hover:text-slate-900 transition-colors pt-1"
-              >
-                <div className="mt-0.5 shrink-0">
-                  {agreeTerms ? (
-                    <CheckSquare className="w-4 h-4 text-emerald-600" />
-                  ) : (
-                    <Square className="w-4 h-4 text-slate-400" />
-                  )}
-                </div>
-                <div>
-                  Declaro estar em plenas condições físicas e de saúde para a prática esportiva na Corrida
-                  Equarena e concordo com o regulamento do evento.
-                </div>
-              </div>
-              {errors.agreeTerms && (
-                <p className="text-xs text-red-600 flex items-center gap-1 font-semibold">
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                  {errors.agreeTerms}
-                </p>
-              )}
-            </div>
-
-            {/* Submission Button */}
-            <div className="pt-4">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full py-4 px-6 rounded-2xl font-black text-base sm:text-lg bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white shadow-xl shadow-emerald-600/30 hover:shadow-emerald-600/50 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-3 cursor-pointer disabled:opacity-50"
-              >
-                {isSubmitting ? (
-                  <span>Processando inscrição...</span>
-                ) : (
-                  <>
-                    <span>Prosseguir para Pagamento Pix & Envio no WhatsApp</span>
-                    <ArrowRight className="w-5 h-5" />
-                  </>
                 )}
-              </button>
-
-              <div className="flex items-center justify-center gap-2 mt-3 text-xs text-slate-500">
-                <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                <span>
-                  Próxima etapa: Chave Pix da Equarena e botão para enviar comprovante via WhatsApp
-                </span>
               </div>
-            </div>
-          </form>
+
+              {/* Submit CTA */}
+              <div className="pt-1">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full py-3.5 px-4 rounded-xl font-bold text-xs sm:text-sm bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span>
+                    {isSubmitting
+                      ? 'Gerando Inscrição...'
+                      : 'Continuar para Pix (R$ 10) e WhatsApp'}
+                  </span>
+                </button>
+
+                <div className="flex items-center justify-center gap-1.5 mt-2.5 text-[11px] text-slate-500 text-center">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>
+                    Para fechar esta janela, toque no botão X no canto superior direito
+                  </span>
+                </div>
+              </div>
+            </form>
+          </motion.div>
         </div>
-      </div>
-    </section>
+      )}
+    </AnimatePresence>
   );
 };
+

@@ -1,4 +1,4 @@
-export type ModalityDistance = '3km' | '5km' | '10km';
+export type ModalityDistance = '5km';
 export type ShirtSize = 'PP' | 'P' | 'M' | 'G' | 'GG' | 'XG';
 
 export interface Participant {
@@ -25,6 +25,7 @@ export interface Participant {
   confirmedAt?: string;
   confirmedBy?: string;
   pixCode?: string;
+  whatsappRedirected?: boolean;
 }
 
 export interface EventConfig {
@@ -40,8 +41,17 @@ export interface EventConfig {
   pixReceiverCity: string;
   whatsAppNumber: string; // (XX) XXXXX-XXXX
   earlyBirdLimit: number; // 100
-  earlyBirdFee: number; // 5.00
-  standardFee: number; // 25.00
+  earlyBirdFee: number; // 0.00 or 5.00
+  standardFee: number; // 0.00 or 25.00
+}
+
+export interface AnalyticsStats {
+  pageViews: number;
+  ctaClicks: number;
+  formStarts: number;
+  registrationsCount: number;
+  whatsappRedirects: number;
+  lastUpdated: string;
 }
 
 export type AuditActionType =

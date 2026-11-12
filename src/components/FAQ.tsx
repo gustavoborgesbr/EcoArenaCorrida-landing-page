@@ -8,73 +8,63 @@ interface FAQProps {
 
 export const FAQ: React.FC<FAQProps> = ({ config }) => {
   const [openIdx, setOpenIdx] = useState<number | null>(0);
+  const feeAmount = config.earlyBirdFee || 10;
 
   const questions = [
     {
-      q: 'Como funciona a taxa de R$ 5,00 para os 100 primeiros inscritos?',
-      a: `Para comemorar os 4 anos da Eco Arena em grande estilo, os primeiros 100 inscritos garantem sua vaga por apenas R$ ${config.earlyBirdFee.toFixed(2).replace('.', ',')}! Esse valor simbólico dá direito ao número de peito oficial, Monster Energy Drink na largada, show ao vivo com Joy Davidson e participação nos 5 sorteios imperdíveis!`,
+      q: `Para que serve a taxa de R$ ${feeAmount.toFixed(2).replace('.', ',')} na inscrição antecipada?`,
+      a: `A corrida na rua é livre e aberta para celebrar com a galera! Os R$ ${feeAmount.toFixed(2).replace('.', ',')} da inscrição antecipada pelo site servem para custear e garantir os seus benefícios exclusivos no evento: lata de Monster Energy Drink no início, participação nos 5 sorteios de aniversário, hidratação e número de peito.`,
     },
     {
-      q: 'Como e para onde envio o comprovante do Pix?',
-      a: `O número do Pix é exatamente o mesmo número do WhatsApp oficial da Eco Arena (${config.whatsAppNumber}). Assim que você preencher o formulário, surge o botão 'Enviar Comprovante no WhatsApp' com sua mensagem pronta com Nome, CPF e Código. É só anexar o comprovante!`,
+      q: 'Como faço para concluir minha inscrição pelo celular?',
+      a: 'Basta preencher seu Nome Completo e CPF (e-mail e telefone são opcionais). Ao tocar em continuar, você verá o QR Code Pix de R$ 10,00 e será direcionado automaticamente para o WhatsApp da Eco Arena com sua mensagem pronta.',
     },
     {
-      q: 'O que está incluso na minha inscrição?',
-      a: 'Sua inscrição garante: número de peito oficial, Monster Energy Drink no início da prova para aquela energia extra, show exclusivo dos cantores Joy Davidson puxando a corrida, hidratação na chegada e participação em todos os 5 sorteios imperdíveis de aniversário (3 meses de treino, Whey, Creatina e avaliações físicas).',
+      q: 'Qual é a data, horário e distância do Corre de Sexta?',
+      a: 'O evento acontece na sexta-feira, 20/11 às 19h, com concentração na Porta da Eco Arena - Massagueira. O percurso tem distância única de 5 Km.',
     },
     {
-      q: 'Qual o horário e local da concentração?',
-      a: 'A concentração acontece às 7h da noite (19h00) pontualmente na porta da Eco Arena. Venha preparado para viver uma noite de esporte, música e celebração!',
-    },
-    {
-      q: 'Não sou atleta profissional, posso participar?',
-      a: 'Com certeza! É esporte, é festa, é comemoração! A Corrida Arena conta com caminhada de 3 km e corridas de 5 km e 10 km, ideal para iniciantes, famílias e todos os níveis.',
-    },
-    {
-      q: 'Como sei se minha inscrição foi confirmada?',
-      a: 'Após enviar o comprovante via WhatsApp, nossa equipe valida seu pagamento e envia a confirmação definitiva. Você também pode consultar sua inscrição a qualquer momento no botão "Consultar Inscrição" no topo desta página usando seu CPF.',
+      q: 'Quais são as atrações e prêmios dos sorteios?',
+      a: 'Teremos Jó & Deyvisson + Paredão Confirmado puxando a corrida, Monster Energy Drink na largada e 5 sorteios especiais (planos de treino na Eco Arena, Whey, Creatina e avaliações físicas).',
     },
   ];
 
   return (
-    <section id="faq" className="py-16 sm:py-24 bg-white text-slate-900 relative border-t border-slate-200">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-        <div className="text-center space-y-3">
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-800 text-xs font-bold uppercase tracking-wider shadow-sm">
-            <HelpCircle className="w-4 h-4 text-emerald-600" />
-            Tire suas Dúvidas
+    <section id="faq" className="w-full max-w-full overflow-x-hidden py-8 sm:py-12 bg-white text-slate-800 relative border-t border-slate-200/70">
+      <div className="w-full max-w-lg sm:max-w-2xl mx-auto px-3.5 sm:px-6 space-y-5 min-w-0">
+        <div className="space-y-1 text-left sm:text-center">
+          <div className="inline-flex items-center gap-1.5 text-emerald-700 text-[11px] font-semibold">
+            <HelpCircle className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Tire suas Dúvidas</span>
           </div>
-          <h2 className="text-3xl sm:text-5xl font-black uppercase font-heading tracking-tight text-slate-900">
-            PERGUNTAS FREQUENTES
+          <h2 className="text-lg sm:text-2xl font-bold tracking-tight text-slate-900 font-heading">
+            Perguntas Frequentes
           </h2>
-          <p className="text-slate-600 text-sm sm:text-base">
-            Tudo o que você precisa saber sobre a inscrição, pagamento Pix e o dia da corrida.
-          </p>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-2">
           {questions.map((item, idx) => {
             const isOpen = openIdx === idx;
             return (
               <div
                 key={idx}
-                className="bg-slate-50 border border-slate-200 rounded-2xl overflow-hidden transition-all duration-200 shadow-sm"
+                className="bg-slate-50/70 border border-slate-200/80 rounded-xl overflow-hidden"
               >
                 <button
                   type="button"
                   onClick={() => setOpenIdx(isOpen ? null : idx)}
-                  className="w-full p-5 sm:p-6 text-left flex items-center justify-between gap-4 cursor-pointer hover:bg-slate-100 transition-colors"
+                  className="w-full px-3.5 py-3 text-left flex items-center justify-between gap-3 cursor-pointer hover:bg-slate-100/70 transition-colors"
                 >
-                  <span className="font-bold text-sm sm:text-base text-slate-900">
+                  <span className="font-semibold text-xs sm:text-sm text-slate-900">
                     {item.q}
                   </span>
-                  <span className="p-1 rounded-lg bg-emerald-100 text-emerald-700 shrink-0">
-                    {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  <span className="p-1 rounded-lg bg-emerald-50 text-emerald-700 shrink-0">
+                    {isOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                   </span>
                 </button>
 
                 {isOpen && (
-                  <div className="px-5 sm:px-6 pb-5 sm:pb-6 text-xs sm:text-sm text-slate-600 leading-relaxed border-t border-slate-200 pt-4 bg-white">
+                  <div className="px-3.5 pb-3.5 text-xs text-slate-600 leading-relaxed border-t border-slate-200/60 pt-2.5 bg-white">
                     {item.a}
                   </div>
                 )}
@@ -83,26 +73,26 @@ export const FAQ: React.FC<FAQProps> = ({ config }) => {
           })}
         </div>
 
-        {/* Support Callout */}
-        <div className="bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left shadow-sm">
-          <div className="space-y-1">
-            <h3 className="font-bold text-sm sm:text-base text-slate-900">
-              Ainda tem dúvidas ou quer ajuda com a inscrição?
+        {/* Soft WhatsApp Contact Card */}
+        <div className="bg-emerald-50/60 border border-emerald-200/80 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
+          <div>
+            <h3 className="font-bold text-xs sm:text-sm text-slate-900">
+              Quer falar direto com a equipe da Eco Arena?
             </h3>
-            <p className="text-xs text-slate-600">
-              Fale direto com a coordenação da Equarena pelo WhatsApp.
+            <p className="text-[11px] text-slate-600 mt-0.5">
+              Tire dúvidas ou envie seu comprovante de inscrição direto pelo WhatsApp.
             </p>
           </div>
           <a
             href={`https://wa.me/55${config.whatsAppNumber.replace(/\D/g, '')}?text=${encodeURIComponent(
-              'Olá, Equipe Equarena! Tenho uma dúvida sobre a corrida.'
+              'Olá, Equipe Eco Arena! Gostaria de tirar uma dúvida sobre o Corre de Sexta (20/11 às 19h).'
             )}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-extrabold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/25 shrink-0 transition-colors"
+            className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-2xs shrink-0 transition-colors"
           >
-            <MessageCircle className="w-4 h-4 fill-white" />
-            <span>Chamar no WhatsApp</span>
+            <MessageCircle className="w-3.5 h-3.5" />
+            <span>Falar no WhatsApp</span>
           </a>
         </div>
       </div>

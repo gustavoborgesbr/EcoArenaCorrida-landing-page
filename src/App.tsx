@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Header } from './components/Header.tsx';
 import { Hero } from './components/Hero.tsx';
 import { EventDetails } from './components/EventDetails.tsx';
@@ -9,25 +9,28 @@ import { TicketModal } from './components/TicketModal.tsx';
 import { LookupModal } from './components/LookupModal.tsx';
 import { AdminDrawer } from './components/AdminDrawer.tsx';
 import { SettingsModal } from './components/SettingsModal.tsx';
-import { FAQ } from './components/FAQ.tsx';
 import { Footer } from './components/Footer.tsx';
-import { DEFAULT_CONFIG, INITIAL_PARTICIPANTS } from './data/initialData.ts';
+import { DEFAULT_ANALYTICS, DEFAULT_CONFIG, INITIAL_PARTICIPANTS } from './data/initialData.ts';
 import { User } from 'firebase/auth';
-import { EventConfig, ModalityDistance, Participant } from './types/index.ts';
+import { AnalyticsStats, EventConfig, ModalityDistance, Participant } from './types/index.ts';
 import {
   subscribeToParticipants,
   subscribeToEventConfig,
+  subscribeToAnalyticsStats,
+  trackAnalyticsEvent,
   seedInitialDataIfEmpty,
   saveParticipant,
   saveEventConfigToFirestore,
 } from './services/firestoreService.ts';
 import { subscribeToAuthState, logoutAdmin } from './services/authService.ts';
+import { calculateRegistrationFee } from './utils/validation.ts';
+import { MessageCircle } from 'lucide-react';
 
-const STORAGE_KEY_CONFIG = 'equarena_race_config_v1';
-const STORAGE_KEY_PARTICIPANTS = 'equarena_race_participants_v1';
+const STORAGE_KEY_CONFIG = 'equarena_race_config_v5';
+const STORAGE_KEY_PARTICIPANTS = 'equarena_race_participants_v3';
+const SESSION_PAGEVIEW_KEY = 'equarena_pageview_tracked_v1';
 
 export default function App() {
-  // Configuration state with local fallback
   const [config, setConfig] = useState<EventConfig>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY_CONFIG);
@@ -38,7 +41,6 @@ export default function App() {
     return DEFAULT_CONFIG;
   });
 
-  // Participants state with local fallback
   const [participants, setParticipants] = useState<Participant[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY_PARTICIPANTS);
@@ -49,10 +51,10 @@ export default function App() {
     return INITIAL_PARTICIPANTS;
   });
 
-  // Firebase Auth state for Admin
+  const [analytics, setAnalytics] = useState<AnalyticsStats>(DEFAULT_ANALYTICS);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  // Modals state
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
   const [paymentParticipant, setPaymentParticipant] = useState<Participant | null>(null);
   const [ticketParticipant, setTicketParticipant] = useState<Participant | null>(null);
   const [isLookupOpen, setIsLookupOpen] = useState(false);
@@ -60,7 +62,8 @@ export default function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [selectedDistance, setSelectedDistance] = useState<ModalityDistance>('5km');
 
-  // Listen to Firebase Auth state
+  const pageViewTrackedRef = useRef(false);
+
   useEffect(() => {
     const unsubAuth = subscribeToAuthState((user) => {
       setCurrentUser(user);
@@ -68,12 +71,21 @@ export default function App() {
     return () => unsubAuth();
   }, []);
 
-  // Initialize and sync with Firestore
   useEffect(() => {
-    // 1. Seed initial data to Firestore if database is empty
     seedInitialDataIfEmpty(DEFAULT_CONFIG, INITIAL_PARTICIPANTS);
 
-    // 2. Real-time subscription to participants
+    if (!pageViewTrackedRef.current) {
+      pageViewTrackedRef.current = true;
+      try {
+        if (!sessionStorage.getItem(SESSION_PAGEVIEW_KEY)) {
+          sessionStorage.setItem(SESSION_PAGEVIEW_KEY, '1');
+          trackAnalyticsEvent('pageViews');
+        }
+      } catch {
+        trackAnalyticsEvent('pageViews');
+      }
+    }
+
     const unsubParticipants = subscribeToParticipants((liveList) => {
       if (liveList && liveList.length > 0) {
         setParticipants(liveList);
@@ -85,29 +97,57 @@ export default function App() {
       }
     });
 
-    // 3. Real-time subscription to config
     const unsubConfig = subscribeToEventConfig((liveConfig) => {
       if (liveConfig) {
-        setConfig(liveConfig);
+        const normalizedFee =
+          liveConfig.earlyBirdFee === 0 || liveConfig.earlyBirdFee === 5 || liveConfig.earlyBirdFee === 15
+            ? 10.0
+            : liveConfig.earlyBirdFee;
+        const normalizedWhatsApp =
+          !liveConfig.whatsAppNumber ||
+          liveConfig.whatsAppNumber === '(82) 99999-0000' ||
+          liveConfig.whatsAppNumber === '(71) 99999-8888'
+            ? DEFAULT_CONFIG.whatsAppNumber
+            : liveConfig.whatsAppNumber;
+        const normalizedConfig: EventConfig = {
+          ...liveConfig,
+          eventName: DEFAULT_CONFIG.eventName,
+          eventDate:
+            liveConfig.eventDate === '2025-10-16' || liveConfig.eventDate === '2025-05-18'
+              ? DEFAULT_CONFIG.eventDate
+              : liveConfig.eventDate,
+          whatsAppNumber: normalizedWhatsApp,
+          earlyBirdFee: normalizedFee,
+          standardFee:
+            liveConfig.standardFee === 0 || liveConfig.standardFee === 25 || liveConfig.standardFee === 15
+              ? 10.0
+              : liveConfig.standardFee,
+        };
+        setConfig(normalizedConfig);
         try {
-          localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(liveConfig));
+          localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(normalizedConfig));
         } catch {
           // ignore
         }
       }
     });
 
+    const unsubAnalytics = subscribeToAnalyticsStats((liveStats) => {
+      if (liveStats) {
+        setAnalytics(liveStats);
+      }
+    });
+
     return () => {
       unsubParticipants();
       unsubConfig();
+      unsubAnalytics();
     };
   }, []);
 
-  const scrollToForm = () => {
-    const el = document.getElementById('inscricao');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    }
+  const openRegistrationModal = () => {
+    trackAnalyticsEvent('ctaClicks');
+    setIsRegistrationOpen(true);
   };
 
   const scrollToDetails = () => {
@@ -117,12 +157,30 @@ export default function App() {
     }
   };
 
-  const handleRegistered = async (newParticipant: Participant) => {
-    // Optimistic UI update
+  const handleFormStart = () => {
+    trackAnalyticsEvent('formStarts');
+  };
+
+  const handleRegistered = async (newParticipant: Participant, whatsAppUrl: string) => {
+    setIsRegistrationOpen(false);
     setParticipants((prev) => [newParticipant, ...prev]);
     setPaymentParticipant(newParticipant);
 
-    // Persist to Firebase Firestore
+    trackAnalyticsEvent('registrationsCount');
+    trackAnalyticsEvent('whatsappRedirects');
+
+    try {
+      const a = document.createElement('a');
+      a.href = whatsAppUrl;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch {
+      // Fallback handled by PaymentModal button
+    }
+
     try {
       await saveParticipant(newParticipant);
     } catch (err) {
@@ -132,7 +190,7 @@ export default function App() {
 
   const handleSelectDistance = (dist: ModalityDistance) => {
     setSelectedDistance(dist);
-    scrollToForm();
+    openRegistrationModal();
   };
 
   const handleSaveSettings = async (newConfig: EventConfig) => {
@@ -155,9 +213,16 @@ export default function App() {
     }
   };
 
+  const activeCount = participants.filter((p) => p.status !== 'cancelled').length;
+  const feeInfo = calculateRegistrationFee(
+    activeCount,
+    config.earlyBirdLimit,
+    config.earlyBirdFee || 10,
+    config.standardFee || 10
+  );
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col selection:bg-emerald-500 selection:text-white">
-      {/* Header with dynamic role-based actions */}
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-50 text-slate-800 flex flex-col selection:bg-emerald-500 selection:text-white pb-16 sm:pb-0">
       <Header
         config={config}
         participants={participants}
@@ -165,57 +230,76 @@ export default function App() {
         onOpenLookup={() => setIsLookupOpen(true)}
         onOpenAdmin={() => setIsAdminOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
-        onScrollToForm={scrollToForm}
+        onScrollToForm={openRegistrationModal}
         onLogout={handleLogout}
       />
 
-      {/* Main Content */}
-      <main className="flex-1">
-        {/* Hero Section with Live Spots Counter */}
+      <main className="flex-1 w-full max-w-full overflow-x-hidden bg-slate-50">
+        {/* 1. Clean Hero */}
         <Hero
           config={config}
           participants={participants}
-          onScrollToForm={scrollToForm}
+          onScrollToForm={openRegistrationModal}
           onScrollToDetails={scrollToDetails}
         />
 
-        {/* Modalities, Kits & Schedule */}
+        {/* 2. Benefits & 5 Sorteios */}
         <EventDetails
           config={config}
           onSelectDistance={handleSelectDistance}
         />
 
-        {/* Official Race Map (Massagueira / Orla da Lagoa) */}
+        {/* 3. Official Race Map */}
         <RaceMap onSelectDistance={handleSelectDistance} />
-
-        {/* Official Registration Form */}
-        <RegistrationForm
-          config={config}
-          participants={participants}
-          selectedDistance={selectedDistance}
-          onRegistered={handleRegistered}
-        />
-
-        {/* Frequently Asked Questions */}
-        <FAQ config={config} />
       </main>
 
-      {/* Footer */}
       <Footer
         config={config}
         currentUser={currentUser}
         onOpenLookup={() => setIsLookupOpen(true)}
         onOpenAdmin={() => setIsAdminOpen(true)}
-        onScrollToForm={scrollToForm}
+        onScrollToForm={openRegistrationModal}
         onLogout={handleLogout}
       />
 
-      {/* Payment & WhatsApp Proof Modal */}
+      {/* Mobile Sticky Bottom Bar */}
+      <div className="sm:hidden fixed bottom-0 inset-x-0 z-30 bg-slate-50/95 backdrop-blur-md border-t border-slate-200/80 px-3.5 py-2 shadow-lg flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <div className="text-[10px] font-semibold text-slate-500 truncate">
+            20/11 às 19h • Benefícios e Sorteios
+          </div>
+          <div className="text-xs font-bold text-slate-900 truncate">
+            Inscrição Antecipada: <span className="text-emerald-600">R$ {(feeInfo.fee || 10).toFixed(2).replace('.', ',')}</span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={openRegistrationModal}
+          className="px-3.5 py-2 rounded-xl font-bold text-xs bg-emerald-600 hover:bg-emerald-500 text-white shadow-2xs flex items-center gap-1.5 shrink-0 cursor-pointer"
+        >
+          <MessageCircle className="w-3.5 h-3.5" />
+          <span>Inscrever-se</span>
+        </button>
+      </div>
+
+      {/* Registration Form Modal (Only closes via X button) */}
+      <RegistrationForm
+        isOpen={isRegistrationOpen}
+        onClose={() => setIsRegistrationOpen(false)}
+        config={config}
+        participants={participants}
+        selectedDistance={selectedDistance}
+        onRegistered={handleRegistered}
+        onFormStart={handleFormStart}
+      />
+
       {paymentParticipant && (
         <PaymentModal
           participant={paymentParticipant}
           config={config}
           onClose={() => setPaymentParticipant(null)}
+          onWhatsAppClick={() => trackAnalyticsEvent('whatsappRedirects')}
           onViewTicket={() => {
             const current = paymentParticipant;
             setPaymentParticipant(null);
@@ -224,7 +308,6 @@ export default function App() {
         />
       )}
 
-      {/* Printable Digital Voucher / Ticket Modal */}
       {ticketParticipant && (
         <TicketModal
           participant={ticketParticipant}
@@ -233,7 +316,6 @@ export default function App() {
         />
       )}
 
-      {/* Search / Lookup Modal */}
       {isLookupOpen && (
         <LookupModal
           participants={participants}
@@ -245,10 +327,10 @@ export default function App() {
         />
       )}
 
-      {/* Admin Drawer with Firebase Auth, Athletes & Audit Trail */}
       <AdminDrawer
         participants={participants}
         config={config}
+        analytics={analytics}
         isOpen={isAdminOpen}
         onClose={() => setIsAdminOpen(false)}
         onOpenSettings={() => {
@@ -261,7 +343,6 @@ export default function App() {
         }}
       />
 
-      {/* Settings Modal to customize WhatsApp / Pix numbers */}
       <SettingsModal
         config={config}
         isOpen={isSettingsOpen}
